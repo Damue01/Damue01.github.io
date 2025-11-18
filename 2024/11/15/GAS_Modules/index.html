@@ -1,0 +1,277 @@
+<html lang="zh-CN"><head><meta charset="utf-8"><meta http-equiv="X-UA-Compatible" content="IE=edge"><meta name="viewport" content="width=device-width, initial-scale=1"><meta name="description" content="Try to save my life"><meta name="keyword"><title>GAS 初探
+-
+小禾苗の垃圾堆
+-
+
+</title><link rel="icon" href="/img/favicon.ico">
+<link rel="stylesheet" href="/css/style.css">
+
+<link rel="stylesheet" href="/css/helpers.css">
+
+<script src="/js/clipboard/clipboard.min.js"></script>
+
+
+<script src="/js/bootstrap.js"></script>
+
+<script async="async" src="//busuanzi.ibruce.info/busuanzi/2.3/busuanzi.pure.mini.js"></script><!-- hexo injector head_end start --><style>
+body hanla:after {
+    content: ' ';
+    display: inline;
+    font-family: inherit;
+    font-size: 0.45em;
+}
+
+html code hanla,
+html pre hanla,
+html kbd hanla,
+html samp hanla,
+html ruby hanla,
+html .tag-list-item hanla {
+    display: none;
+}
+
+html ol > hanla,
+html ul > hanla {
+    display: none;
+}
+</style><!-- hexo injector head_end end --><meta name="generator" content="Hexo 7.3.0"></head><body><div class="loading-wrapper" data-loading="data-loading"><div class="loading"><span></span><span></span><span></span></div></div><div class="page" data-filter="data-filter"><div class="head" data-show="data-show"><header class="head-header"><div class="head-author"><a class="head-author-link" href="/">小禾苗の垃圾堆<hanla></hanla></a></div><div class="head-right"><button class="bar-wrap" id="bar-wrap-toggle" title="menu button"><span class="bar"></span><span class="bar"></span><span class="bar"></span></button><div class="head-item"><a class="search-button head-item-link"><span>Search</span>
+<i class="icon icon-search"></i></a></div><div class="head-item"><a class="head-item-link" href="/about">关于</a></div></div></header>
+<div class="menubar-head" id="menubar"><ul class="menubar-ul"><li class="menubar-item" data-border="data-border"></li><li class="menubar-item"><i class="icon icon-archive"></i>
+<a class="menubar-link" href="/archives">Archives</a></li><li class="menubar-item"><i class="icon icon-tags"></i>
+<a class="menubar-link" href="/tags">Tags</a></li><li class="menubar-item" data-border="data-border"></li><li class="menubar-item"><a class="menubar-link" href="/about"><span><hanla></hanla>关于<hanla></hanla></span></a></li></ul><div class="menu-search-box search-button"><div>Search</div>
+<i class="icon icon-search"></i></div></div></div><div class="main" data-page="post"><article class="post" id="post"><header class="post-head"><h1 class="post-title"><a class="title" href="/2024/11/15/GAS_Modules/">GAS 初探<hanla></hanla></a></h1></header><div class="post-meta"><div class="post-date"><time class="post-time" itemprop="datePublished" title="2024-11-15 01:15:18" datetime="2024-11-14T17:15:18.000Z">2024-11-15</time></div>|
+<div class="post-tag"><ul class="article-tag-list" itemprop="keywords"><li class="article-tag-list-item"><a class="article-tag-list-link" href="/tags/GAS/" rel="tag">GAS</a></li></ul></div>
+<div class="post-visit"><span id="busuanzi_container_page_pv"><span id="busuanzi_value_page_pv"></span>hits</span></div></div><div class="post-info"><div class="post-word-count">This article contains 1,921 words.</div>
+</div><div class="article-entry" itemprop="articleBody"><h2 id="GAS-初探"><a href="#GAS-初探" class="headerlink" title="GAS 初探"></a>GAS 初探<hanla></hanla></h2><h3 id="GAS-调研"><a href="#GAS-调研" class="headerlink" title="GAS 调研"></a>GAS 调研</h3><blockquote>
+<p>GAS 学习成本是否超过收益？<br>GAS 主要还是用于大型联机项目的技能系统，与当前项目并不是很匹配，但是设计思想是非常好的。如果自己重新按照设计思想去设计一个框架，对比起 GAS 以及后续可能出现的需求，是否具有更好的性价比呢？</p>
+</blockquote>
+<p>为什么要用 GAS？</p>
+<ul>
+<li>可以实现带有消耗和冷却功能的技能</li>
+<li>处理数值属性（等级、攻击力、防御力）</li>
+<li>应用状态效果（烟花、眩晕）</li>
+<li>应用游戏标签（GameplayTags 管理）</li>
+<li>特效和音效</li>
+<li>网络复制和预测</li>
+</ul>
+<p>适合用 GAS 的项目</p>
+<ul>
+<li>C++ 项目，对 GAS 有足够的了解，多读源码</li>
+<li>使用 Dedicated Server 的，或者之前没有自己做服务器框架，局域网联机也能用的</li>
+<li>有复杂的技能逻辑设计需求</li>
+</ul>
+<blockquote>
+<p>The plugin provides an out-of-the-box solution in single and multiplayer games for:</p>
+<ul>
+<li>Implementing level-based character abilities or skills with optional costs and cooldowns (GameplayAbilities)</li>
+<li>Manipulating numerical Attributes belonging to actors (Attributes)</li>
+<li>Applying status effects to actors (GameplayEffects)</li>
+<li>Applying GameplayTags to actors (GameplayTags)</li>
+<li>Spawning visual or sound effects (GameplayCues)</li>
+<li>Replication of everything mentioned above</li>
+</ul>
+</blockquote>
+<p><strong>先读代码、再做开发。</strong></p>
+<p>个人经验：框架灵活度越高，设计耗费的精力越多越复杂；灵活性低的就是逻辑开发了，需要再次解耦</p>
+<hr>
+<p>GAS 中各模块个人理解：</p>
+<ul>
+<li>UAbilitySystemComponent - ASC</li>
+<li>UGameplayAbility - GA，角色可以执行的事情都能用 GA，移动和 UI 不要用 GA</li>
+<li>FGameplayAttribute - Attribute，一般会设置当前等级、最高等级，然后添加宏定义，就能满足各种需求了，实际上是在 ASC init 时加载父类的时候会判断是否存在 AttributeSet</li>
+<li>FGameplayTag - Tag， 还是像管理用的，方便做树状图</li>
+<li>UGameplayEffect - GE，做所有的数值结算，对自己或他人产生影响，可以根据 GameplayTags 去配置触发哪个技能，阻塞哪些技能，这些技能可能就是一个操作，挥个拳之类的。GE 本身也有等级，我们可以根据 CurveTable 去配置不同等级触发的效果</li>
+<li>UGameplayTask - Task 异步操作, eg: 技能里播放一个蒙太奇，结束后再结束该技能</li>
+<li>UGameplayCueNotify - GC</li>
+<li>FGameplayEventData - Event</li>
+<li>Who:<hanla></hanla>谁能放技能？AbilitySystemComponent，只有挂载 ASC 模块的 Actor 才能放技能，一般联机或者死亡要保留数据的就把他挂载在 PlayerState</li>
+<li>How:<hanla></hanla>技能的逻辑？GameplayAbility，编写技能逻辑</li>
+<li>Change:<hanla></hanla>技能的效果？GameplayEffect，技能效果、改变了什么</li>
+<li>What:<hanla></hanla>技能改变的属性？GamePlayAttribute，属性设置</li>
+<li>If:<hanla></hanla>技能涉及的条件？GameplayTag，组合查询</li>
+<li>Visual:<hanla></hanla>技能的视效？GameplayCue，看起来是什么样</li>
+<li>Async:<hanla></hanla>技能的长时行动？GameplayTask</li>
+<li>Send:<hanla></hanla>技能消息事件？GamePlayEvent，技能之间互相发送</li>
+</ul>
+<hr>
+<p>Actor 通信的一种方式</p>
+<img src="/2024/11/15/GAS_Modules/Gz0cbhfx6oNFfRxNF58cofQFnhd.png" class="" title="img">
+
+<p>技能触发执行流程</p>
+<img src="/2024/11/15/GAS_Modules/Euy3bIttPof1dhxNLGKcKdmMnbb.png" class="" title="img">
+
+<hr>
+<h3 id="GAS-简易流程"><a href="#GAS-简易流程" class="headerlink" title="GAS 简易流程"></a>GAS 简易流程<hanla></hanla></h3><h4 id="Gameplay-Abilities"><a href="#Gameplay-Abilities" class="headerlink" title="Gameplay Abilities"></a>Gameplay Abilities</h4><ol>
+<li><p>为角色添加 AbilitySystem</p>
+</li>
+<li><p>创建 GA 蓝图，继承自 Gameplay Ability，在里面实现能力</p>
+<ol>
+<li>Event ActivateAbility，激活时就会触发</li>
+<li>GA 里获得 character 用 Get Avatar Actor from Actor Info</li>
+<li>最后别忘了 End Ability</li>
+</ol>
+</li>
+<li><p>角色蓝图中，别忘了 Give Ability</p>
+<ol>
+<li>用添加的 AbilitySystem，调用 Give Ability 节点，激活对应的 Ability Class/xx/xx</li>
+</ol>
+</li>
+<li><p>在该实现功能的地方，调用 Try Activate Ability/ by Class/ by Tag</p>
+<ol>
+<li>使用 Get player character 去调用 Get Ability System Component（因为挂载到了角色身上）</li>
+</ol>
+</li>
+</ol>
+<h4 id="Gameplay-Tags"><a href="#Gameplay-Tags" class="headerlink" title="Gameplay Tags"></a>Gameplay Tags</h4><ol>
+<li>先去 Project Settings-&gt;Project-&gt;GameplayTags-&gt;Manage Gameplay Tags 新建 tag</li>
+<li>打开 GA 蓝图，查看 Class Default(Stimulation，运行按钮边上)，可以看到 Tags 列表</li>
+<li>Ability Tags 是添加的标签，其他的是标签 Rules，最简单操作就是只添加一个标签</li>
+<li>激活能力的地方改为 Try Activate Abilities by Tag（最推荐的方法），传入 tag 就用 Make Literal Gameplay Tag Container</li>
+</ol>
+<h4 id="Gameplay-Effects"><a href="#Gameplay-Effects" class="headerlink" title="Gameplay Effects"></a>Gameplay Effects</h4><blockquote>
+<p>They can modify attributes grant, activate abilities, add or remove gameplay tags</p>
+</blockquote>
+<ol>
+<li><p>先去创建一个 Tag</p>
+</li>
+<li><p>创建新蓝图，继承自 Gameplay Effect</p>
+</li>
+<li><p>配置效果 Details 面板，以着火为例  （这一块更新了很多，用的时候看一下源码）</p>
+<ol>
+<li>设置 Duration Policy 为 Has Duration</li>
+<li>设置 Magnitude Calculation Type 为 Scalable Float，值为 5</li>
+<li>设置 Target Tags(Granted to Actor)<hanla></hanla>为 Target Tags Gameplay Effect Component (Actually grants the tags to the actor that has the gameplay effect)</li>
+<li>设置 Added 里的标签</li>
+</ol>
+</li>
+<li><p>将着火效果应用到应该激活的目标上</p>
+<ol>
+<li>想要使用 Ability System 的物体自身必须带有一个 Ability System Component</li>
+<li>获取目标物体的 Ability System Component</li>
+<li>调用 ApplyGameplayEffectToSelf，配置传入的 GE Class 等参数，可以使用 Effect Content 实现高级效果</li>
+</ol>
+</li>
+</ol>
+<blockquote>
+<p><strong>Modifier Magnitude（修改值）</strong><br>修改值方面，GE 提供了 4 种方式：</p>
+<ul>
+<li>ScalableFloat：写死一个浮点值。最简单的方式，不用多说。</li>
+<li>AttributeBase：基于属性值算出一个值。（看到这我惊了，功能真特么强大）<ul>
+<li>取一个属性 Attribute</li>
+<li>可选属性来自 Source 还是 Target。</li>
+<li>可选是取 BaseValue，还是 CurrentValue，还是 CurrentValue-BaseValue 的变化值。</li>
+<li>可选是否快照，快照会抓取 GE 添加时刻的属性值，不快照的话则会跟着变。</li>
+<li>用这个属性，按照（Value+PreMultiplyAdditiveValue）*Coeffcient+PostMultiplyAdditiveValue 得出最终值，这三个值是可配的。</li>
+<li>这里的参数和属性，可以配置一个曲线表格，但我还没研究明白怎么玩。</li>
+</ul>
+</li>
+<li>CustomCalculationClass：适用于更加复杂灵活的修改，你需要创建一个 ModifierMagnitudeCalculation（MMC）类，在其中计算出一个 Float，然后通过 Pre/Post/Coeffcient 进一步修改。这个 MMC 类可以做很多奇怪的事情，或者说很多依赖 Buff 的奇怪的东西都适合写在这。</li>
+<li>SetByCaller：这种方式，是在 GE 的 Spec 创建之后，再由 Ability 传入一个值，例如技能的蓄力时间越长，伤害越高。使用起来比较麻烦，在这里不做介绍。</li>
+</ul>
+</blockquote>
+<h4 id="Gameplay-Cues"><a href="#Gameplay-Cues" class="headerlink" title="Gameplay Cues"></a>Gameplay Cues</h4><blockquote>
+<p>Gameplay cues are essentially auditory and visual cues that can automatically added to a scene，理解成游戏表现、游戏效果</p>
+</blockquote>
+<ol>
+<li><p>新建一个蓝图，继承自 GameplayCueNotify_Actor</p>
+</li>
+<li><p>设置效果，以粒子效果为例</p>
+<ol>
+<li>添加一个 Niagara Component</li>
+<li>配置对应的 Niagara 效果</li>
+<li>在 Gameplay Cue Tag 里新建 tag（used to link our gameplay effect to this queue)</li>
+<li>如果要绑定，别忘了设置 Auto Attach to Owner</li>
+</ol>
+</li>
+<li><p>GE 蓝图里，可以设置 Gameplay Cues 选项了</p>
+<ol>
+<li>将刚创建的 tag 传入 Gameplay Cue Tags</li>
+</ol>
+</li>
+</ol>
+<h4 id="Gameplay-AttributesSet"><a href="#Gameplay-AttributesSet" class="headerlink" title="Gameplay AttributesSet"></a>Gameplay AttributesSet</h4><blockquote>
+<p>Just float alues that are stored on gameplay ability system components to keep track of things like health、mana</p>
+</blockquote>
+<ol>
+<li><p>创建一个 C++ 类，继承自 AttributeSet（现在只能在 C++ 中定义）</p>
+</li>
+<li><p>对照 UE 官方 Attribute Set 手册配置基础内容<hanla></hanla><br><a target="_blank" rel="noopener" href="https://dev.epicgames.com/community/learning/tutorials/zrEb/unreal-engine-how-to-create-attribute-sets-using-unreal-gameplay-ability-system">https://dev.epicgames.com/community/learning/tutorials/zrEb/unreal-engine-how-to-create-attribute-sets-using-unreal-gameplay-ability-system</a></p>
+<figure class="highlight cpp"><table><tbody><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br><span class="line">31</span><br></pre></td><td class="code"><pre><span class="line"><span class="meta">#<span class="keyword">pragma</span> once</span></span><br><span class="line"><span class="meta">#<span class="keyword">include</span> <span class="string">"AttributeSet.h"</span></span></span><br><span class="line"><span class="meta">#<span class="keyword">include</span> <span class="string">"AbilitySystemComponent.h"</span></span></span><br><span class="line"><span class="meta">#<span class="keyword">include</span> <span class="string">"QuodHealthAttributeSet.generated.h"</span></span></span><br><span class="line"></span><br><span class="line"><span class="comment">// 定义便于使用的宏<hanla></hanla></span></span><br><span class="line"><span class="comment">// Helper macro to define the accessors for an attribute</span></span><br><span class="line"><span class="meta">#<span class="keyword">define</span> ATTRIBUTE_ACCESSORS(ClassName, PropertyName) </span></span><br><span class="line"><span class="built_in">GAMEPLAYATTRIBUTE_PROPERTY_GETTER</span>(ClassName, PropertyName) </span><br><span class="line"><span class="built_in">GAMEPLAYATTRIBUTE_VALUE_GETTER</span>(PropertyName) </span><br><span class="line"><span class="built_in">GAMEPLAYATTRIBUTE_VALUE_SETTER</span>(PropertyName) </span><br><span class="line"><span class="built_in">GAMEPLAYATTRIBUTE_VALUE_INITTER</span>(PropertyName)</span><br><span class="line"></span><br><span class="line"><span class="comment">// Used to hold information about the health of our actors</span></span><br><span class="line"><span class="built_in">UCLASS</span>()</span><br><span class="line"><span class="keyword">class</span> <span class="title class_">UQuodHealthAttributeSet</span> : <span class="keyword">public</span> UAttributeSet</span><br><span class="line">{</span><br><span class="line">    <span class="built_in">GENERATED_BODY</span>()</span><br><span class="line"></span><br><span class="line">    <span class="keyword">public</span>:</span><br><span class="line">    <span class="comment">// Current health of the owner</span></span><br><span class="line">    <span class="built_in">UPROPERTY</span>()</span><br><span class="line">    FGameplayAttributeData Health = <span class="number">100.0f</span>;</span><br><span class="line">    <span class="built_in">ATTRIBUTE_ACCESSORS</span>(UQuodHealthAttributeSet, Health)</span><br><span class="line"></span><br><span class="line">    <span class="comment">// Max health that the owner can have</span></span><br><span class="line">    <span class="built_in">UPROPERTY</span>(EditAnywhere, BlueprintReadOnly)</span><br><span class="line">    FGameplayAttributeData MaxHealth= <span class="number">100.0f</span>;</span><br><span class="line">    <span class="built_in">ATTRIBUTE_ACCESSORS</span>(UQuodHealthAttributeSet, MaxHealth)</span><br><span class="line">    <span class="comment">// Internally what this macro will do is create setters and getters for us so working with the attribute becomes easier.</span></span><br><span class="line">};</span><br></pre></td></tr></tbody></table></figure>
+</li>
+<li><p>构建<hanla></hanla>DataTable</p>
+</li>
+<li><p>Row Structure<hanla></hanla>选择<hanla></hanla>AttributeMetaData</p>
+</li>
+<li><p>RowName<hanla></hanla>按照<hanla></hanla>UQuodHealthAttributeSet.Health<hanla></hanla>这样命名</p>
+</li>
+<li><p>初始化数值，设置<hanla></hanla>BaseValue<hanla></hanla>为<hanla></hanla>100</p>
+</li>
+<li><p>去对应的蓝图配置属性（需要的都可以配置）</p>
+</li>
+<li><p>在<hanla></hanla>AbilitySystemComponent<hanla></hanla>中配置<hanla></hanla>Attribute Test</p>
+</li>
+<li><p>在<hanla></hanla>Default Starting Data<hanla></hanla>添加元素</p>
+</li>
+<li><p>Attributes<hanla></hanla>设置<hanla></hanla>UQuodHealthAttributeSet</p>
+</li>
+<li><p>Default Starting Table<hanla></hanla>设置刚刚新建的<hanla></hanla>Datatable</p>
+</li>
+<li><p>回到<hanla></hanla>GE</p>
+</li>
+<li><p>设置<hanla></hanla>Modifiers<hanla></hanla>属性</p>
+</li>
+<li><p>设置<hanla></hanla>Attribute<hanla></hanla>为刚刚创建的属性<hanla></hanla>UQuodHealthAttributeSet.Health</p>
+</li>
+<li><p>配置<hanla></hanla>Modifier Op<hanla></hanla>是增加、减少还是其他变化去影响这个属性</p>
+</li>
+<li><p>GE<hanla></hanla>也可以在<hanla></hanla>Period<hanla></hanla>设置期间持续的变化</p>
+</li>
+<li><p>查看对应的属性可以用<hanla></hanla>Get Gameplay Attribute Value</p>
+</li>
+</ol>
+<h4 id="Gameplay-Events"><a href="#Gameplay-Events" class="headerlink" title="Gameplay Events"></a>Gameplay Events</h4><blockquote>
+<p>Just messages that you can send to inform actors specifically that have ability system component</p>
+</blockquote>
+<ol>
+<li>发送消息</li>
+<li>调用<hanla></hanla>Send Gameplay Event to Actor (消息发送给谁）</li>
+<li>可以用<hanla></hanla>Make GameplayEvventData<hanla></hanla>传参给上面节点的<hanla></hanla>Payload</li>
+</ol>
+</div></article><aside class="post-widget"><h4>In this article</h4><nav class="post-toc-wrap" id="post-toc"><ol class="post-toc"><li class="post-toc-item post-toc-level-2"><a class="post-toc-link" href="#GAS-%E5%88%9D%E6%8E%A2"><span class="post-toc-number">1.</span> <span class="post-toc-text">GAS 初探<hanla></hanla></span></a><ol class="post-toc-child"><li class="post-toc-item post-toc-level-3"><a class="post-toc-link" href="#GAS-%E8%B0%83%E7%A0%94"><span class="post-toc-number">1.1.</span> <span class="post-toc-text">GAS 调研<hanla></hanla></span></a></li><li class="post-toc-item post-toc-level-3"><a class="post-toc-link" href="#GAS-%E7%AE%80%E6%98%93%E6%B5%81%E7%A8%8B"><span class="post-toc-number">1.2.</span> <span class="post-toc-text">GAS 简易流程<hanla></hanla></span></a><ol class="post-toc-child"><li class="post-toc-item post-toc-level-4"><a class="post-toc-link" href="#Gameplay-Abilities"><span class="post-toc-number">1.2.1.</span> <span class="post-toc-text">Gameplay Abilities</span></a></li><li class="post-toc-item post-toc-level-4"><a class="post-toc-link" href="#Gameplay-Tags"><span class="post-toc-number">1.2.2.</span> <span class="post-toc-text">Gameplay Tags</span></a></li><li class="post-toc-item post-toc-level-4"><a class="post-toc-link" href="#Gameplay-Effects"><span class="post-toc-number">1.2.3.</span> <span class="post-toc-text">Gameplay Effects</span></a></li><li class="post-toc-item post-toc-level-4"><a class="post-toc-link" href="#Gameplay-Cues"><span class="post-toc-number">1.2.4.</span> <span class="post-toc-text">Gameplay Cues</span></a></li><li class="post-toc-item post-toc-level-4"><a class="post-toc-link" href="#Gameplay-AttributesSet"><span class="post-toc-number">1.2.5.</span> <span class="post-toc-text">Gameplay AttributesSet</span></a></li><li class="post-toc-item post-toc-level-4"><a class="post-toc-link" href="#Gameplay-Events"><span class="post-toc-number">1.2.6.</span> <span class="post-toc-text">Gameplay Events</span></a></li></ol></li></ol></li></ol></nav></aside></div><footer class="footer-nav"><div class="footer"><div class="back-top" id="back-top" title="Back to top"><i class="icon icon-chevron-bar-up"></i></div><div class="footer-content"><div><span id="busuanzi_container_site_pv"><span id="busuanzi_value_site_pv">?</span>
+PV
+</span><span id="busuanzi_container_site_uv"><span id="busuanzi_value_site_uv">?</span>
+UV</span></div>
+
+Copyright ©
+2024<span class="time-divide">-</span>2025
+Damue.
+
+Power by
+<a href="https://hexo.io/" target="_blank" rel="external nofollow">Hexo</a>
+and
+<a href="https://github.com/Cerallin/hexo-theme-yuzu" target="_blank" rel="external nofollow" title="v3.2.5">Theme Yuzu</a>.</div></div></footer>
+<script>window.config = {
+  url_root: '/',
+  meta_path: 'meta.json',
+};
+</script>
+<script src="/js/theme/back-to-top.js"></script>
+
+
+<script src="/js/theme/clipboard.js"></script>
+
+
+<script src="/js/theme/loading.js"></script>
+
+
+<script src="/js/theme/navbar.js"></script>
+
+<script src="/js/theme/search.js"></script>
+
+<script src="/js/theme/toc.js"></script>
+<script>window.onload = function () {
+  for (const moduleName in Theme) {
+    const module = Theme[moduleName];
+    module.register();
+  }
+};</script></div><div class="search-modal" id="search-modal"><div class="card"><div class="card-head"><div class="search-box"><input class="search-input" id="search-input" placeholder="search"><div class="search-button" id="search-button"><div class="icon icon-search"></div></div></div><div class="close-button"><div class="icon icon-x"></div></div></div><div class="card-body"><div class="search-count">search.total<span id="search-count-num">0</span>search result(s) in total.</div><div class="search-result" id="search-result"></div></div></div></div></body></html>
