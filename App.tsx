@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import { motion, useScroll, useTransform, AnimatePresence, Variants } from 'framer-motion';
-import { Menu, Instagram, Twitter, Mail, Linkedin, X, MoveDown, Cpu, Globe } from 'lucide-react';
+import { Menu, Mail, X, MoveDown, Cpu, Globe, Github, Tv } from 'lucide-react';
 import Scene3D from './components/Scene3D';
 import PixelBackground from './components/PixelBackground';
 import ProjectCard from './components/ProjectCard';
@@ -58,8 +58,8 @@ const content = {
   en: {
     nav: { home: 'HOME', work: 'WORK', logs: 'LOGS', contact: 'CONTACT' },
     hero: {
-      role: 'DIGITAL ARCHITECT',
-      desc: 'SPECIALIZING IN GAMEPLAY SYSTEMS, AI INTEGRATION, AND IMMERSIVE XR EXPERIENCES.',
+      role: 'Game Engineer & Designer',
+      desc: 'FOCUSED ON THE INTEGRATION OF AI AND GAMES, AS WELL AS THE DEVELOPMENT OF IMMERSIVE XR EXPERIENCES.',
       scroll: 'SCROLL'
     },
     logs: {
@@ -96,7 +96,7 @@ const content = {
         ]
       },
       exp1: {
-        title: 'Top-Tier Mobile Title',
+        title: 'TOP AI COMPANION MOBILE GAME',
         date: '2025.7 - PRESENT',
         tags: ['UNITY ENGINEER', 'LUA', 'PERFORMANCE'],
         desc: 'Responsible for UI architecture iteration and performance optimization within the combat system. Ensured high-frequency interaction smoothness for a top-grossing chart-topping title.',
@@ -106,7 +106,7 @@ const content = {
         text2: 'Utilized Profiler to target GC spikes. Optimized Lua-C# bridge overhead. Reduced UI Draw Calls by 80% through hierarchy restructuring and canvas splitting.'
       },
       exp2: {
-        title: 'AI Virtual Human Lab',
+        title: 'TOP VIRTUAL GIRL AI LABORATORY STARTUP TEAM',
         date: '2024.10 - 2025.7',
         tags: ['UE ENGINEER', 'TECH ANIM', 'DCC TOOLS'],
         desc: 'Founding engineer involved in the 0-to-1 development of an AI data-driven character system. Secured angel round funding.',
@@ -123,15 +123,15 @@ const content = {
     },
     contact: {
       title: 'CONNECT',
-      subtitle: 'READY TO DEPLOY NEXT-GEN EXPERIENCES.',
+      subtitle: 'LET\'S CREATE THE FUTURE.',
       cta: 'INITIATE_CHAT'
     }
   },
   zh: {
     nav: { home: '首页', work: '作品', logs: '档案', contact: '联系' },
     hero: {
-      role: '数字架构师',
-      desc: '专注于玩法系统构建、AI整合工作流以及沉浸式XR体验开发。',
+      role: '游戏工程师',
+      desc: '专注于AI与游戏的融合以及沉浸式XR体验开发。',
       scroll: '滑动'
     },
     logs: {
@@ -143,7 +143,7 @@ const content = {
         languages: '学习热情',
         languagesVal: '密切关注科技动态，独立完成 Agent 搭建与本地模型部署',
         openSource: '开源贡献',
-        openSourceVal: '维护 Chat Bot 开源项目 (2000+用户)，修复 MetaXR 适配',
+        openSourceVal: '维护 Chat Bot 开源项目 (2000+用户)，参与修复 MetaXR 适配',
         statusTitle: '最新状态',
         statusText: '近期开发 AI+VR 游戏点赞 100+，持续探索 AIGC 在游戏工作流中的应用。'
       },
@@ -168,7 +168,7 @@ const content = {
         ]
       },
       exp1: {
-        title: '恋与深空 (Top-Tier Mobile Title)',
+        title: '头部情感陪伴类移动游戏',
         date: '2025.7 - 当前',
         tags: ['UNITY 工程师', 'LUA', 'UI/Gameplay'],
         desc: '负责战斗系统框架内UI架构的功能迭代与性能优化，保证高频战斗场景下的UI交互流畅度。任职期间游戏获得2025年科隆最佳移动游戏。',
@@ -178,7 +178,7 @@ const content = {
         text2: '利用 Profiler 定位GC异常。优化 Lua-C# 调用模式降低开销。移除冗余 Canvas 与 ListView，减少 80% UI层级，大幅降低 Draw Call。'
       },
       exp2: {
-        title: '米哈游鹿鸣 / AI Lab (Startup)',
+        title: '头部虚拟人AI实验室创业团队',
         date: '2024.10 - 2025.7',
         tags: ['UE 工程师', '引擎动画', '移动端'],
         desc: '作为首位开发，参与项目从 0 到 1 的完整设计与实现，辅助AI数据驱动角色的全链路路线、引擎动画系统底层优化与3C交互体验打磨。',
@@ -194,9 +194,9 @@ const content = {
       title: '精选作品'
     },
     contact: {
-      title: '建立连接',
-      subtitle: '准备好部署下一代体验了吗？',
-      cta: '开启对话'
+      title: '欢迎联系',
+      subtitle: '让我们一起打造未来',
+      cta: '发送邮件'
     }
   }
 };
@@ -558,18 +558,22 @@ const App: React.FC = () => {
               {t.contact.subtitle}
             </p>
             
-            <a href="mailto:hello@damue.dev" className="group relative inline-block mb-32">
+            <a href="mailto:damue0@outlook.com" className="group relative inline-block mb-32">
                <div className="relative border border-black bg-white text-black text-4xl md:text-6xl px-16 py-8 font-bold hover:bg-black hover:text-white transition-all duration-300 uppercase tracking-tight shadow-[0_4px_0_rgba(0,0,0,1)] hover:shadow-none hover:translate-y-[4px]">
                  {t.contact.cta}
                </div>
             </a>
 
             <div className="flex gap-8 mb-24">
-              {[Instagram, Twitter, Linkedin, Mail].map((Icon, i) => (
-                 <a key={i} href="#" className="p-4 border border-[#E5E5E5] hover:bg-black hover:text-white hover:border-black transition-all rounded-full">
-                    <Icon size={24} strokeWidth={1.5} />
-                 </a>
-              ))}
+               <a href="https://github.com/Damue01" target="_blank" rel="noopener noreferrer" className="p-4 border border-[#E5E5E5] hover:bg-black hover:text-white hover:border-black transition-all rounded-full">
+                  <Github size={24} strokeWidth={1.5} />
+               </a>
+               <a href="https://space.bilibili.com/5866300" target="_blank" rel="noopener noreferrer" className="p-4 border border-[#E5E5E5] hover:bg-black hover:text-white hover:border-black transition-all rounded-full">
+                  <Tv size={24} strokeWidth={1.5} />
+               </a>
+               <a href="mailto:damue0@outlook.com" className="p-4 border border-[#E5E5E5] hover:bg-black hover:text-white hover:border-black transition-all rounded-full">
+                  <Mail size={24} strokeWidth={1.5} />
+               </a>
             </div>
             
             <footer className="w-full border-t border-[#E5E5E5] py-12 flex flex-col md:flex-row justify-between px-12 opacity-40 text-xs font-mono tracking-widest text-gray-500">
