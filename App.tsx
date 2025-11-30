@@ -214,7 +214,7 @@ const titleAnim: Variants = {
 // --- COMPONENT: INTERACTIVE SPLIT TEXT ---
 const SplitText: React.FC<{ text: string, className?: string, pixel?: boolean }> = ({ text, className, pixel }) => {
   return (
-    <div className={`inline-flex overflow-hidden ${className}`}>
+    <div className={`inline-flex ${className}`}>
       {text.split('').map((char, i) => (
         <motion.span
           key={i}
