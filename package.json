@@ -1,6 +1,6 @@
 {
   "homepage": "https://github.com/Damue01/Damue01.github.io",
-  "name": "pixelartisan---avant-garde-game-art",
+  "name": "Damue protfolio",
   "private": true,
   "version": "0.0.0",
   "type": "module",
@@ -10,7 +10,7 @@
       "lint": "eslint . --ext ts,tsx --report-unused-disable-directives --max-warnings 0",
       "preview": "vite preview",
       "predeploy": "npm run build",
-      "deploy": "gh-pages -d dist"
+      "deploy": "newWeb -d dist"
   },
   "dependencies": {
     "@google/genai": "^1.30.0",
