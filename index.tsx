@@ -1,6 +1,8 @@
 import React from 'react';
 import ReactDOM from 'react-dom/client';
+import { HashRouter, Routes, Route } from 'react-router-dom';
 import App from './App';
+import BlogPostPage from './components/BlogPostPage';
 
 const rootElement = document.getElementById('root');
 if (!rootElement) {
@@ -10,6 +12,11 @@ if (!rootElement) {
 const root = ReactDOM.createRoot(rootElement);
 root.render(
   <React.StrictMode>
-    <App />
+    <HashRouter>
+      <Routes>
+        <Route path="/" element={<App />} />
+        <Route path="/blog/:slug" element={<BlogPostPage />} />
+      </Routes>
+    </HashRouter>
   </React.StrictMode>
 );

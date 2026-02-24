@@ -4,7 +4,7 @@
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1" />
     <title>小禾苗 の 垃圾堆</title>
-    <meta name="description" content="Portfolio of a high-end game art designer" />
+    <meta name="description" content="Damue - Game Engineer & Designer" />
     
     <!-- Favicon -->
     <link rel="icon" type="image/gif" href="/icon.gif" />
@@ -12,19 +12,38 @@
     
     <!-- Tailwind CSS -->
     <script src="https://cdn.tailwindcss.com"></script>
+    <script>
+      tailwind.config = {
+        darkMode: 'class',
+        theme: {
+          extend: {
+            fontFamily: {
+              sans: ['"Geist Variable"', '"Noto Sans SC"', 'system-ui', 'sans-serif'],
+              mono: ['"Geist Mono Variable"', 'ui-monospace', 'SFMono-Regular', 'monospace'],
+            }
+          }
+        }
+      }
+    </script>
     
-    <!-- Google Fonts -->
+    <!-- Fonts: Geist + Geist Mono + Noto Sans SC -->
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-    <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+SC:wght@300;400;500;700;900&family=Silkscreen&family=Space+Grotesk:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+SC:wght@300;400;500;700;900&display=swap" rel="stylesheet">
+    <link href="https://cdn.jsdelivr.net/npm/@fontsource-variable/geist/index.min.css" rel="stylesheet">
+    <link href="https://cdn.jsdelivr.net/npm/@fontsource-variable/geist-mono/index.min.css" rel="stylesheet">
 
     <style>
       body {
-        font-family: 'Space Grotesk', 'Noto Sans SC', sans-serif;
+        font-family: 'Geist Variable', 'Noto Sans SC', system-ui, sans-serif;
         background-color: #FFFFFF;
-        color: #000000;
-        cursor: crosshair;
+        color: #09090b;
         overflow-x: hidden;
+      }
+
+      .dark body {
+        background-color: #09090b;
+        color: #fafafa;
       }
       
       /* Noise Overlay for Paper Texture */
@@ -41,11 +60,18 @@
         background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 200 200' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='noiseFilter'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.8' numOctaves='3' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23noiseFilter)'/%3E%3C/svg%3E");
       }
 
-      .pixel-font {
-        font-family: 'Silkscreen', cursive;
+      .dark .noise-overlay {
+        mix-blend-mode: screen;
+        opacity: 0.03;
       }
 
-      /* Custom scrollbar - Light Mode Luxury */
+      .pixel-font {
+        font-family: 'Geist Mono Variable', ui-monospace, monospace;
+        font-weight: 600;
+        letter-spacing: 0.05em;
+      }
+
+      /* Custom scrollbar */
       ::-webkit-scrollbar {
         width: 8px;
       }
@@ -58,17 +84,18 @@
         border-radius: 4px;
       }
       ::-webkit-scrollbar-thumb:hover {
-        background: #000000;
+        background: #09090b;
       }
-      
-      /* Selection Color */
-      ::selection {
-        background: #000000;
-        color: #FFFFFF;
+
+      .dark ::-webkit-scrollbar-track {
+        background: #09090b;
       }
-      
-      .hard-shadow {
-        box-shadow: 6px 6px 0px 0px rgba(0, 0, 0, 1);
+      .dark ::-webkit-scrollbar-thumb {
+        background: #3f3f46;
+        border-color: #09090b;
+      }
+      .dark ::-webkit-scrollbar-thumb:hover {
+        background: #fafafa;
       }
       
       /* Typography Utilities */
@@ -83,6 +110,32 @@
         border: 1px solid rgba(0, 0, 0, 0.05);
         box-shadow: 0 4px 30px rgba(0, 0, 0, 0.03);
       }
+
+      .dark .glass-panel {
+        background: rgba(24, 24, 27, 0.6);
+        border: 1px solid rgba(255, 255, 255, 0.05);
+        box-shadow: 0 4px 30px rgba(0, 0, 0, 0.2);
+      }
+
+      /* Article content styles (BlogPostPage) */
+      .article-content h1 { font-size: 1.875rem; font-weight: 700; letter-spacing: -0.025em; margin: 2rem 0 1rem; }
+      .article-content h2 { font-size: 1.5rem; font-weight: 700; letter-spacing: -0.025em; margin: 2rem 0 0.75rem; padding-bottom: 0.5rem; border-bottom: 1px solid #e4e4e7; }
+      .article-content h3 { font-size: 1.25rem; font-weight: 600; margin: 1.5rem 0 0.5rem; }
+      .article-content h4 { font-size: 1.125rem; font-weight: 600; margin: 1.25rem 0 0.5rem; }
+      .article-content p  { margin: 1rem 0; line-height: 1.75; color: #52525b; }
+      .article-content ul { list-style-type: disc; padding-left: 1.5rem; margin: 1rem 0; }
+      .article-content ol { list-style-type: decimal; padding-left: 1.5rem; margin: 1rem 0; }
+      .article-content li { margin: 0.375rem 0; line-height: 1.75; color: #52525b; }
+      .article-content strong { color: #09090b; font-weight: 600; }
+      .article-content code { font-size: 0.875rem; background: #f4f4f5; padding: 0.125rem 0.375rem; border-radius: 0.25rem; font-family: 'Geist Mono Variable', ui-monospace, monospace; }
+      .article-content pre { background: #fafafa; border: 1px solid #e4e4e7; border-radius: 0.75rem; padding: 1rem 1.25rem; overflow-x: auto; margin: 1.5rem 0; }
+      .article-content pre code { background: transparent; padding: 0; font-size: 0.8125rem; line-height: 1.7; }
+
+      .dark .article-content h2 { border-bottom-color: #3f3f46; }
+      .dark .article-content p, .dark .article-content li { color: #a1a1aa; }
+      .dark .article-content strong { color: #fafafa; }
+      .dark .article-content code { background: #27272a; }
+      .dark .article-content pre { background: #18181b; border-color: #3f3f46; }
     </style>
   <script type="importmap">
 {

@@ -1,62 +1,18 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 import { motion, useScroll, useTransform, AnimatePresence, Variants } from 'framer-motion';
-import { Menu, Mail, X, MoveDown, Cpu, Globe, Github, Tv } from 'lucide-react';
+import { List, Envelope, X, ArrowDown, Cpu, Globe, GithubLogo, MonitorPlay, Sun, Moon, ArrowRight } from '@phosphor-icons/react';
+import { useNavigate } from 'react-router-dom';
 import Scene3D from './components/Scene3D';
 import PixelBackground from './components/PixelBackground';
-import ProjectCard from './components/ProjectCard';
 import ChatWidget from './components/ChatWidget';
-import { Project } from './types';
+import { getAllPosts, type BlogPost } from './lib/posts';
 
-// Mock Data
-const projects: Project[] = [
-  {
-    id: 1,
-    title: "NEON PROTOCOL",
-    category: "Character Design",
-    imageUrl: "https://picsum.photos/1000/800?random=1",
-    description: "Cyberpunk samurai character series.",
-    gridSpan: 2
-  },
-  {
-    id: 2,
-    title: "VOID RUNNER",
-    category: "Environment",
-    imageUrl: "https://picsum.photos/800/1000?random=2",
-    description: "Procedurally generated infinite runner environments.",
-    gridSpan: 1
-  },
-  {
-    id: 3,
-    title: "PIXEL DUNGEON",
-    category: "UI/UX",
-    imageUrl: "https://picsum.photos/800/800?random=3",
-    description: "Retro-modern interface design.",
-    gridSpan: 1
-  },
-  {
-    id: 4,
-    title: "MECHA SOUL",
-    category: "3D Modeling",
-    imageUrl: "https://picsum.photos/800/800?random=4",
-    description: "High-poly mecha designs.",
-    gridSpan: 1
-  },
-   {
-    id: 5,
-    title: "GLITCH CITY",
-    category: "Concept Art",
-    imageUrl: "https://picsum.photos/1000/600?random=5",
-    description: "Atmospheric concept pieces exploring urban decay.",
-    gridSpan: 2
-  }
-];
-
-// --- LOCALIZATION DATA ---
+// --- LOCALIZATION ---
 type Language = 'en' | 'zh';
 
 const content = {
   en: {
-    nav: { home: 'HOME', work: 'WORK', logs: 'LOGS', contact: 'CONTACT' },
+    nav: { home: 'HOME', logs: 'LOGS', blog: 'BLOG', contact: 'CONTACT' },
     hero: {
       role: 'Game Engineer & Designer',
       desc: 'FOCUSED ON THE INTEGRATION OF AI AND GAMES, AS WELL AS THE DEVELOPMENT OF IMMERSIVE XR EXPERIENCES.',
@@ -118,17 +74,17 @@ const content = {
         text3: 'Implemented motion warping for precise interaction. Refined camera collision systems with spring arm damping.'
       }
     },
-    work: {
-      title: 'SELECTED'
+    blog: {
+      title: 'BLOG',
+      readMore: 'READ'
     },
     contact: {
-      title: 'CONNECT',
-      subtitle: 'LET\'S CREATE THE FUTURE.',
-      cta: 'INITIATE_CHAT'
+      copyright: '\u00A9 2024-2025 DAMUE',
+      status: 'SYSTEM_ONLINE'
     }
   },
   zh: {
-    nav: { home: '首页', work: '作品', logs: '档案', contact: '联系' },
+    nav: { home: '首页', logs: '档案', blog: '博客', contact: '联系' },
     hero: {
       role: '游戏工程师',
       desc: '专注于AI与游戏的融合以及沉浸式XR体验开发。',
@@ -190,400 +146,497 @@ const content = {
         text3: '设计动画混合状态机融合大模型动作。集成Control Rig实现自动跟随与程序化修型。重构相机碰撞逻辑与背包数值系统。'
       }
     },
-    work: {
-      title: '精选作品'
+    blog: {
+      title: '个人博客',
+      readMore: '阅读'
     },
     contact: {
-      title: '欢迎联系',
-      subtitle: '让我们一起打造未来',
-      cta: '发送邮件'
+      copyright: '\u00A9 2024-2025 DAMUE',
+      status: '系统在线'
     }
   }
 };
 
-// --- ANIMATION CONFIG ---
+// --- ANIMATION ---
 const titleAnim: Variants = {
   hidden: { y: 100, opacity: 0 },
-  visible: { 
-    y: 0, 
-    opacity: 1, 
-    transition: { duration: 1, ease: [0.16, 1, 0.3, 1] as [number, number, number, number] } // "Expo Out" feel
+  visible: {
+    y: 0,
+    opacity: 1,
+    transition: { duration: 1, ease: [0.16, 1, 0.3, 1] as [number, number, number, number] }
   }
 };
 
-// --- COMPONENT: INTERACTIVE SPLIT TEXT ---
-const SplitText: React.FC<{ text: string, className?: string, pixel?: boolean }> = ({ text, className, pixel }) => {
+const staggerContainer: Variants = {
+  hidden: {},
+  visible: { transition: { staggerChildren: 0.1 } }
+};
+
+const staggerItem: Variants = {
+  hidden: { opacity: 0, y: 24 },
+  visible: { opacity: 1, y: 0, transition: { duration: 0.6, ease: [0.16, 1, 0.3, 1] as [number, number, number, number] } }
+};
+
+// --- SPLIT TEXT ---
+const SplitText: React.FC<{ text: string; className?: string }> = ({ text, className }) => (
+  <div className={`inline-flex ${className ?? ''}`}>
+    {text.split('').map((char, i) => (
+      <motion.span
+        key={i}
+        className={`inline-block origin-bottom ${char === ' ' ? 'w-[2vw]' : ''}`}
+        whileHover={{
+          y: -15,
+          scale: 1.1,
+          rotate: Math.random() * 5 - 2.5,
+          color: '#555555',
+          transition: { type: 'spring', stiffness: 400, damping: 10 }
+        }}
+      >
+        {char}
+      </motion.span>
+    ))}
+  </div>
+);
+
+// --- BLOG CARD ---
+const BlogCard: React.FC<{ post: BlogPost; index: number; readMore: string }> = ({ post, index, readMore }) => {
+  const navigate = useNavigate();
   return (
-    <div className={`inline-flex ${className}`}>
-      {text.split('').map((char, i) => (
-        <motion.span
-          key={i}
-          className={`inline-block origin-bottom ${char === ' ' ? 'w-[2vw]' : ''}`}
-          whileHover={{ 
-            y: -15, 
-            scale: 1.1, 
-            rotate: Math.random() * 5 - 2.5,
-            color: "#444444",
-            transition: { type: "spring", stiffness: 400, damping: 10 }
-          }}
-        >
-          {char}
-        </motion.span>
-      ))}
-    </div>
+    <motion.article
+      variants={staggerItem}
+      className={`group cursor-pointer ${index === 0 ? 'md:col-span-2' : ''}`}
+      onClick={() => navigate(`/blog/${post.slug}`)}
+    >
+      <div className={`overflow-hidden rounded-2xl mb-4 border border-zinc-200 dark:border-zinc-800 bg-zinc-100 dark:bg-zinc-900 ${index === 0 ? 'aspect-[2/1]' : 'aspect-video'}`}>
+        <img
+          src={post.cover}
+          alt={post.title}
+          className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-700"
+          loading="lazy"
+        />
+      </div>
+      <div className="flex gap-2 mb-3">
+        {post.tags.map(tag => (
+          <span key={tag} className="text-[10px] font-mono tracking-widest uppercase px-2 py-0.5 border border-zinc-200 dark:border-zinc-800 text-zinc-500">
+            {tag}
+          </span>
+        ))}
+        <span className="text-[10px] font-mono text-zinc-400 ml-auto">{post.date}</span>
+      </div>
+      <h3 className="text-xl md:text-2xl font-bold tracking-tight mb-2 text-zinc-950 dark:text-zinc-50 group-hover:text-zinc-600 dark:group-hover:text-zinc-300 transition-colors">
+        {post.title}
+      </h3>
+      <p className="text-sm text-zinc-500 dark:text-zinc-400 leading-relaxed mb-3 line-clamp-2">
+        {post.description}
+      </p>
+      <span className="inline-flex items-center gap-1 text-xs font-mono tracking-widest uppercase text-zinc-400 group-hover:text-zinc-950 dark:group-hover:text-zinc-50 transition-colors">
+        {readMore} <ArrowRight size={12} weight="bold" className="group-hover:translate-x-1 transition-transform" />
+      </span>
+    </motion.article>
   );
 };
 
+// --- MAIN APP ---
 const App: React.FC = () => {
   const [menuOpen, setMenuOpen] = useState(false);
-  const [lang, setLang] = useState<Language>('zh'); 
+  const [lang, setLang] = useState<Language>('zh');
+  const [darkMode, setDarkMode] = useState(() => {
+    if (typeof window !== 'undefined') {
+      const saved = localStorage.getItem('theme');
+      if (saved) return saved === 'dark';
+      return window.matchMedia('(prefers-color-scheme: dark)').matches;
+    }
+    return false;
+  });
+
   const { scrollYProgress } = useScroll();
-  
-  // Parallax Logic
   const rotate = useTransform(scrollYProgress, [0, 1], [0, 360]);
-  // Work section moves slightly UP relative to scroll (creates floating depth)
-  const yWork = useTransform(scrollYProgress, [0.3, 1], [100, -100]); 
-  // Contact section moves slightly DOWN/delayed (creates anchored depth)
-  const yContact = useTransform(scrollYProgress, [0.7, 1], [-50, 50]);
 
   const t = content[lang];
   const isZh = lang === 'zh';
+  const posts = getAllPosts();
+
+  // Dark mode effect
+  useEffect(() => {
+    document.documentElement.classList.toggle('dark', darkMode);
+    localStorage.setItem('theme', darkMode ? 'dark' : 'light');
+  }, [darkMode]);
+
+  // Scroll to section (replaces hash anchors for compatibility with HashRouter)
+  const scrollTo = useCallback((id: string) => {
+    setMenuOpen(false);
+    setTimeout(() => {
+      document.getElementById(id)?.scrollIntoView({ behavior: 'smooth' });
+    }, 100);
+  }, []);
 
   return (
-    <div className={`relative min-h-screen bg-[#FFFFFF] text-black overflow-x-hidden selection:bg-black selection:text-white ${isZh ? 'tracking-normal' : 'tracking-tight'}`}>
+    <div className={`relative min-h-[100dvh] bg-white dark:bg-zinc-950 text-zinc-950 dark:text-zinc-50 overflow-x-hidden selection:bg-zinc-950 selection:text-white dark:selection:bg-white dark:selection:text-zinc-950 ${isZh ? 'tracking-normal' : 'tracking-tight'}`}>
       <div className="noise-overlay"></div>
       <PixelBackground />
-      
-      {/* Floating Header - Glassmorphism Light */}
-      <nav className="fixed top-6 right-6 z-50 pointer-events-auto flex gap-4">
-        {/* Language Switcher */}
-        <button 
-          onClick={() => setLang(l => l === 'en' ? 'zh' : 'en')}
-          className="bg-white/80 border border-[#E5E5E5] px-4 py-2 hover:bg-black hover:text-white transition-all rounded-full font-bold font-mono text-sm flex items-center gap-2 backdrop-blur-md shadow-sm"
+
+      {/* --- FLOATING NAV --- */}
+      <nav className="fixed top-6 right-6 z-50 pointer-events-auto flex gap-3">
+        {/* Dark mode toggle */}
+        <button
+          onClick={() => setDarkMode(d => !d)}
+          className="bg-white/80 dark:bg-zinc-900/80 border border-zinc-200 dark:border-zinc-800 p-2.5 hover:bg-zinc-950 hover:text-white dark:hover:bg-white dark:hover:text-zinc-950 transition-all rounded-full backdrop-blur-md shadow-sm"
+          aria-label="Toggle dark mode"
         >
-          <Globe size={16} />
+          {darkMode ? <Sun size={18} weight="bold" /> : <Moon size={18} weight="bold" />}
+        </button>
+
+        {/* Language */}
+        <button
+          onClick={() => setLang(l => l === 'en' ? 'zh' : 'en')}
+          className="bg-white/80 dark:bg-zinc-900/80 border border-zinc-200 dark:border-zinc-800 px-4 py-2 hover:bg-zinc-950 hover:text-white dark:hover:bg-white dark:hover:text-zinc-950 transition-all rounded-full font-bold font-mono text-sm flex items-center gap-2 backdrop-blur-md shadow-sm"
+        >
+          <Globe size={16} weight="bold" />
           <span>{lang === 'en' ? 'ZH' : 'EN'}</span>
         </button>
 
-        <button 
+        {/* Menu */}
+        <button
           onClick={() => setMenuOpen(true)}
-          className="bg-white/80 border border-[#E5E5E5] p-3 hover:bg-black hover:text-white transition-all rounded-full backdrop-blur-md shadow-sm"
+          className="bg-white/80 dark:bg-zinc-900/80 border border-zinc-200 dark:border-zinc-800 p-2.5 hover:bg-zinc-950 hover:text-white dark:hover:bg-white dark:hover:text-zinc-950 transition-all rounded-full backdrop-blur-md shadow-sm"
         >
-          <Menu size={20} />
+          <List size={20} weight="bold" />
         </button>
       </nav>
 
-      {/* Fullscreen Menu - Pure Black High Contrast */}
+      {/* --- FULLSCREEN MENU --- */}
       <AnimatePresence>
         {menuOpen && (
-          <motion.div 
-            initial={{ opacity: 0 }} 
-            animate={{ opacity: 1 }} 
+          <motion.div
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
             exit={{ opacity: 0 }}
-            className="fixed inset-0 z-[60] bg-black text-white flex flex-col justify-center items-center"
+            className="fixed inset-0 z-[60] bg-zinc-950 dark:bg-white text-white dark:text-zinc-950 flex flex-col justify-center items-center"
           >
-             <button onClick={() => setMenuOpen(false)} className="absolute top-6 right-6 p-4 border border-white/20 rounded-full hover:bg-white hover:text-black transition-colors">
-                <X size={24} />
-             </button>
-             <div className="flex flex-col gap-4 text-center">
-               {Object.entries(t.nav).map(([key, label]) => (
-                  <a 
-                    key={key}
-                    href={`#${key}`} 
-                    onClick={() => setMenuOpen(false)} 
-                    className={`text-[12vw] font-bold leading-none tracking-tighter hover:text-gray-400 transition-all uppercase ${isZh ? 'font-black' : ''}`}
-                  >
-                    {label}
-                  </a>
-               ))}
-             </div>
+            <button
+              onClick={() => setMenuOpen(false)}
+              className="absolute top-6 right-6 p-4 border border-white/20 dark:border-zinc-950/20 rounded-full hover:bg-white hover:text-zinc-950 dark:hover:bg-zinc-950 dark:hover:text-white transition-colors"
+            >
+              <X size={24} />
+            </button>
+            <div className="flex flex-col gap-4 text-center">
+              {Object.entries(t.nav).map(([key, label]) => (
+                <button
+                  key={key}
+                  onClick={() => scrollTo(key)}
+                  className={`text-[12vw] font-bold leading-none tracking-tighter hover:opacity-50 transition-all uppercase ${isZh ? 'font-black' : ''}`}
+                >
+                  {label}
+                </button>
+              ))}
+            </div>
           </motion.div>
         )}
       </AnimatePresence>
 
-      {/* Hero Section */}
-      <section id="home" className="relative h-screen flex flex-col items-start justify-center overflow-hidden px-6 md:px-12">
-        {/* 3D Scene Background */}
-        <div className="absolute inset-0 z-0 opacity-100 pointer-events-none">
+      {/* ============ HERO ============ */}
+      <section id="home" className="relative min-h-[100dvh] flex flex-col items-start justify-center overflow-hidden px-6 md:px-12">
+        {/* 3D Scene – receives pointer events */}
+        <div className="absolute inset-0 z-0" style={{ touchAction: 'none' }}>
           <Scene3D />
         </div>
-        
-        {/* Massive Typography Overlay */}
-        <div className="relative z-10 w-full flex flex-col justify-center pointer-events-auto select-none text-black">
+
+        {/* Typography overlay – pointer-events-none so 3D scene is interactive */}
+        <div className="relative z-10 w-full flex flex-col justify-center pointer-events-none select-none">
           <motion.div
-             initial={{ y: 50, opacity: 0 }}
-             animate={{ y: 0, opacity: 1 }}
-             transition={{ duration: 1, ease: "circOut" }}
-             className="flex flex-col items-start w-full"
+            initial={{ y: 50, opacity: 0 }}
+            animate={{ y: 0, opacity: 1 }}
+            transition={{ duration: 1, ease: 'circOut' }}
+            className="flex flex-col items-start w-full"
           >
-             <div className="flex items-center gap-4 mb-6">
-                <div className="w-2 h-2 bg-black rounded-full shadow-lg" />
-                <span className={`text-xs tracking-[0.3em] uppercase opacity-80 font-bold ${isZh ? '' : 'font-mono'}`}>{t.hero.role}</span>
+            <div className="flex items-center gap-4 mb-6">
+              <div className="w-2 h-2 bg-zinc-950 dark:bg-zinc-50 rounded-full shadow-lg" />
+              <span className={`text-xs tracking-[0.3em] uppercase opacity-80 font-bold ${isZh ? '' : 'font-mono'}`}>
+                {t.hero.role}
+              </span>
             </div>
 
-            <div className="text-[17vw] leading-[0.8] font-bold tracking-tighter font-['Space_Grotesk'] text-black mix-blend-multiply cursor-default">
+            {/* Title text - pointer-events-auto for SplitText hover effects */}
+            <div className="pointer-events-auto text-[17vw] leading-[0.8] font-bold tracking-tighter mix-blend-multiply dark:mix-blend-normal cursor-default">
               <SplitText text="DAMUE" />
             </div>
-            
+
             <div className="flex items-baseline gap-4 ml-[1vw]">
-               <div className="text-[17vw] leading-[0.8] font-bold tracking-tighter pixel-font text-black opacity-80 cursor-default">
-                 <SplitText text="PORTFOLIO" />
-               </div>
-              <span className="hidden md:inline-block text-sm font-mono opacity-50 rotate-90 origin-left translate-y-8 text-black">V.2025 // MONOCHROME</span>
-            </div>
-            
-            <div className={`mt-16 max-w-xl text-xl leading-relaxed pl-6 border-l-2 border-black ${isZh ? 'font-medium opacity-90' : 'font-mono opacity-70'}`}>
-               {t.hero.desc}
+              <div className="pointer-events-auto text-[17vw] leading-[0.8] font-bold tracking-tighter pixel-font opacity-80 cursor-default">
+                <SplitText text="PORTFOLIO" />
+              </div>
+              <span className="hidden md:inline-block text-sm font-mono opacity-50 rotate-90 origin-left translate-y-8">
+                V.2025
+              </span>
             </div>
 
+            <div className={`mt-16 max-w-xl text-xl leading-relaxed pl-6 border-l-2 border-zinc-950 dark:border-zinc-50 ${isZh ? 'font-medium opacity-90' : 'font-mono opacity-70'}`}>
+              {t.hero.desc}
+            </div>
           </motion.div>
         </div>
 
-        <div className="absolute bottom-12 right-12 z-20 text-black hidden md:flex items-center gap-4">
-             <span className="font-mono text-xs opacity-50 tracking-widest">{t.hero.scroll}</span>
-            <motion.div 
-              style={{ rotate }}
-              className="p-3 border border-black/10 rounded-full"
-            >
-               <MoveDown size={20} className="text-black" />
-            </motion.div>
+        <div className="absolute bottom-12 right-12 z-20 hidden md:flex items-center gap-4">
+          <span className="font-mono text-xs opacity-50 tracking-widest">{t.hero.scroll}</span>
+          <motion.div style={{ rotate }} className="p-3 border border-zinc-950/10 dark:border-zinc-50/10 rounded-full">
+            <ArrowDown size={20} />
+          </motion.div>
         </div>
       </section>
 
-      {/* Resume / Logs Section - White Paper Style */}
-      <section id="logs" className="relative z-10 bg-[#FAFAFA] text-black py-24 md:py-32 px-4 md:px-12 border-t border-[#E5E5E5]">
+      {/* ============ RESUME / LOGS ============ */}
+      <section id="logs" className="relative z-10 bg-zinc-50 dark:bg-zinc-900 py-24 md:py-32 px-4 md:px-12 border-t border-zinc-200 dark:border-zinc-800">
         <div className="max-w-[1920px] mx-auto">
-          
-          <div className="mb-24 flex items-baseline justify-between border-b border-[#E5E5E5] pb-4">
-             <motion.h2 
-               initial="hidden"
-               whileInView="visible"
-               viewport={{ once: true, margin: "-10%" }}
-               variants={titleAnim}
-               className={`text-[6vw] leading-none font-bold tracking-tighter uppercase ${isZh ? 'font-black' : ''}`}
-             >
-                {t.logs.title}
-             </motion.h2>
-             <span className="font-mono text-xs text-gray-400">SYS_ID: 8824_X</span>
+
+          <div className="mb-24 flex items-baseline justify-between border-b border-zinc-200 dark:border-zinc-800 pb-4">
+            <motion.h2
+              initial="hidden"
+              whileInView="visible"
+              viewport={{ once: true, margin: '-10%' }}
+              variants={titleAnim}
+              className={`text-[6vw] leading-none font-bold tracking-tighter uppercase ${isZh ? 'font-black' : ''}`}
+            >
+              {t.logs.title}
+            </motion.h2>
+            <span className="font-mono text-xs text-zinc-400">SYS_ID: 8824_X</span>
           </div>
 
           <div className="grid grid-cols-1 lg:grid-cols-12 gap-16">
-            
+
             {/* Highlights Column */}
             <div className="lg:col-span-3 flex flex-col gap-12 sticky top-24 self-start">
-               <div>
-                  <h3 className="text-xl font-bold mb-8 flex items-center gap-2 pixel-font uppercase text-black"><Cpu size={20}/> {t.logs.highlights.title}</h3>
-                  <ul className="space-y-8 text-sm">
-                    <li className="flex flex-col gap-2">
-                       <span className="font-bold text-gray-400 text-[10px] font-mono tracking-widest uppercase">{t.logs.highlights.coreStack}</span>
-                       <span className={`text-base text-black ${isZh ? 'font-medium' : ''}`}>{t.logs.highlights.coreStackVal}</span>
-                    </li>
-                     <li className="flex flex-col gap-2">
-                       <span className="font-bold text-gray-400 text-[10px] font-mono tracking-widest uppercase">{t.logs.highlights.languages}</span>
-                       <span className={`text-base text-black ${isZh ? 'font-medium' : ''}`}>{t.logs.highlights.languagesVal}</span>
-                    </li>
-                     <li className="flex flex-col gap-2">
-                       <span className="font-bold text-gray-400 text-[10px] font-mono tracking-widest uppercase">{t.logs.highlights.openSource}</span>
-                       <span className={`text-base text-black ${isZh ? 'font-medium' : ''}`}>{t.logs.highlights.openSourceVal}</span>
-                    </li>
-                  </ul>
-               </div>
-               
-               <div className="p-6 bg-white border border-[#E5E5E5] shadow-sm">
-                  <h4 className="font-bold mb-3 pixel-font text-xs uppercase tracking-widest text-white bg-black inline-block px-2 py-1">{t.logs.highlights.statusTitle}</h4>
-                  <p className={`text-sm text-gray-600 leading-relaxed ${isZh ? 'font-medium' : ''}`}>{t.logs.highlights.statusText}</p>
-               </div>
+              <div>
+                <h3 className="text-xl font-bold mb-8 flex items-center gap-2 pixel-font uppercase">
+                  <Cpu size={20} /> {t.logs.highlights.title}
+                </h3>
+                <ul className="space-y-8 text-sm">
+                  <li className="flex flex-col gap-2">
+                    <span className="font-bold text-zinc-400 text-[10px] font-mono tracking-widest uppercase">{t.logs.highlights.coreStack}</span>
+                    <span className={`text-base ${isZh ? 'font-medium' : ''}`}>{t.logs.highlights.coreStackVal}</span>
+                  </li>
+                  <li className="flex flex-col gap-2">
+                    <span className="font-bold text-zinc-400 text-[10px] font-mono tracking-widest uppercase">{t.logs.highlights.languages}</span>
+                    <span className={`text-base ${isZh ? 'font-medium' : ''}`}>{t.logs.highlights.languagesVal}</span>
+                  </li>
+                  <li className="flex flex-col gap-2">
+                    <span className="font-bold text-zinc-400 text-[10px] font-mono tracking-widest uppercase">{t.logs.highlights.openSource}</span>
+                    <span className={`text-base ${isZh ? 'font-medium' : ''}`}>{t.logs.highlights.openSourceVal}</span>
+                  </li>
+                </ul>
+              </div>
+
+              <div className="p-6 bg-white dark:bg-zinc-800 border border-zinc-200 dark:border-zinc-700 shadow-sm">
+                <h4 className="font-bold mb-3 pixel-font text-xs uppercase tracking-widest text-white dark:text-zinc-950 bg-zinc-950 dark:bg-zinc-50 inline-block px-2 py-1">
+                  {t.logs.highlights.statusTitle}
+                </h4>
+                <p className={`text-sm text-zinc-600 dark:text-zinc-400 leading-relaxed ${isZh ? 'font-medium' : ''}`}>
+                  {t.logs.highlights.statusText}
+                </p>
+              </div>
             </div>
 
             {/* Main Content Column */}
             <div className="lg:col-span-9 space-y-32">
-               
-               {/* Technical Exploration */}
-               <div className="group">
-                  <div className="flex flex-col md:flex-row md:items-center justify-between mb-12 gap-4">
-                     <h3 className={`text-4xl md:text-5xl font-bold uppercase text-black ${isZh ? 'tracking-tight' : 'tracking-tighter'}`}>{t.logs.projectAlpha.title}</h3>
-                     <span className="font-mono bg-black text-white px-3 py-1 text-xs font-bold tracking-widest">{t.logs.projectAlpha.subtitle}</span>
-                  </div>
-                  
-                  <div className="grid md:grid-cols-3 gap-8 mb-12 border-y border-[#E5E5E5] py-6">
-                     <div className="col-span-1 space-y-1">
-                        <div className="text-[10px] font-mono text-gray-400 tracking-widest">PLATFORM</div>
-                        <div className="font-bold font-mono text-sm text-black">{t.logs.projectAlpha.platform}</div>
-                     </div>
-                     <div className="col-span-1 space-y-1">
-                        <div className="text-[10px] font-mono text-gray-400 tracking-widest">STACK</div>
-                        <div className="font-bold font-mono text-sm text-black">{t.logs.projectAlpha.stack}</div>
-                     </div>
-                     <div className="col-span-1 space-y-1">
-                        <div className="text-[10px] font-mono text-gray-400 tracking-widest">KEY TECH</div>
-                        <div className="font-bold font-mono text-sm text-black">{t.logs.projectAlpha.tech}</div>
-                     </div>
-                  </div>
 
-                  <div className={`space-y-12 text-lg leading-relaxed text-gray-600 ${isZh ? 'text-justify' : ''}`}>
-                     <p className="font-light text-2xl text-black">
-                        {t.logs.projectAlpha.desc}
-                     </p>
-                     
-                     <div className="grid md:grid-cols-2 gap-12">
-                        <div className="p-8 border border-[#E5E5E5] bg-white hover:border-black transition-colors shadow-sm">
-                           <h4 className="font-bold mb-6 flex items-center gap-2 text-[10px] font-mono border-b border-[#F0F0F0] pb-2 text-black tracking-widest">
-                             {t.logs.projectAlpha.details1Title}
-                           </h4>
-                           <ul className="space-y-6 text-base text-gray-600">
-                              {t.logs.projectAlpha.details1.map((item, i) => (
-                                <li key={i}><span className="font-bold text-black block mb-2 text-sm uppercase">{item.label}</span> {item.text}</li>
-                              ))}
-                           </ul>
-                        </div>
-                        <div className="p-8 border border-[#E5E5E5] bg-white hover:border-black transition-colors shadow-sm">
-                           <h4 className="font-bold mb-6 flex items-center gap-2 text-[10px] font-mono border-b border-[#F0F0F0] pb-2 text-black tracking-widest">
-                              {t.logs.projectAlpha.details2Title}
-                           </h4>
-                           <ul className="space-y-6 text-base text-gray-600">
-                               {t.logs.projectAlpha.details2.map((item, i) => (
-                                <li key={i}><span className="font-bold text-black block mb-2 text-sm uppercase">{item.label}</span> {item.text}</li>
-                              ))}
-                           </ul>
-                        </div>
-                     </div>
-                  </div>
-               </div>
+              {/* Technical Exploration - Project Alpha */}
+              <div className="group">
+                <div className="flex flex-col md:flex-row md:items-center justify-between mb-12 gap-4">
+                  <h3 className={`text-4xl md:text-5xl font-bold uppercase ${isZh ? 'tracking-tight' : 'tracking-tighter'}`}>
+                    {t.logs.projectAlpha.title}
+                  </h3>
+                  <span className="font-mono bg-zinc-950 dark:bg-zinc-50 text-white dark:text-zinc-950 px-3 py-1 text-xs font-bold tracking-widest">
+                    {t.logs.projectAlpha.subtitle}
+                  </span>
+                </div>
 
-               {/* Experience 01 */}
-               <div className="group relative pl-8 border-l border-[#E5E5E5] hover:border-black transition-colors">
-                  
-                   <div className="flex flex-col md:flex-row md:items-baseline justify-between mb-8 gap-4">
-                     <h3 className={`text-4xl md:text-5xl font-bold uppercase text-black ${isZh ? 'tracking-tight' : 'tracking-tighter'}`}>{t.logs.exp1.title}</h3>
-                     <span className="font-mono text-gray-400 text-sm whitespace-nowrap">{t.logs.exp1.date}</span>
+                <div className="grid md:grid-cols-3 gap-8 mb-12 border-y border-zinc-200 dark:border-zinc-800 py-6">
+                  <div className="col-span-1 space-y-1">
+                    <div className="text-[10px] font-mono text-zinc-400 tracking-widest">PLATFORM</div>
+                    <div className="font-bold font-mono text-sm">{t.logs.projectAlpha.platform}</div>
                   </div>
-                  <div className="mb-8 flex gap-3 flex-wrap font-mono text-xs">
-                     {t.logs.exp1.tags.map((tag, i) => (
-                        <span key={i} className="border border-[#E5E5E5] px-3 py-1 uppercase tracking-wider text-gray-500">{tag}</span>
-                     ))}
+                  <div className="col-span-1 space-y-1">
+                    <div className="text-[10px] font-mono text-zinc-400 tracking-widest">STACK</div>
+                    <div className="font-bold font-mono text-sm">{t.logs.projectAlpha.stack}</div>
                   </div>
-                  <p className={`mb-12 text-xl font-light text-black opacity-90 ${isZh ? 'text-justify' : ''}`}>{t.logs.exp1.desc}</p>
-                  
-                  <div className="glass-panel p-8 space-y-8 bg-white/50">
-                      <div>
-                         <h4 className="font-bold mb-2 pixel-font text-xs text-black uppercase tracking-widest">{t.logs.exp1.sub1}</h4>
-                         <p className="text-gray-600 leading-relaxed">{t.logs.exp1.text1}</p>
-                      </div>
-                      <div className="w-full h-[1px] bg-[#E5E5E5]"></div>
-                      <div>
-                         <h4 className="font-bold mb-2 pixel-font text-xs text-black uppercase tracking-widest">{t.logs.exp1.sub2}</h4>
-                         <p className="text-gray-600 leading-relaxed">{t.logs.exp1.text2}</p>
-                      </div>
+                  <div className="col-span-1 space-y-1">
+                    <div className="text-[10px] font-mono text-zinc-400 tracking-widest">KEY TECH</div>
+                    <div className="font-bold font-mono text-sm">{t.logs.projectAlpha.tech}</div>
                   </div>
-               </div>
+                </div>
 
-                {/* Experience 02 */}
-               <div className="group relative pl-8 border-l border-[#E5E5E5] hover:border-black transition-colors">
-                  
-                   <div className="flex flex-col md:flex-row md:items-baseline justify-between mb-8 gap-4">
-                     <h3 className={`text-4xl md:text-5xl font-bold uppercase text-black ${isZh ? 'tracking-tight' : 'tracking-tighter'}`}>{t.logs.exp2.title}</h3>
-                     <span className="font-mono text-gray-400 text-sm whitespace-nowrap">{t.logs.exp2.date}</span>
+                <div className={`space-y-12 text-lg leading-relaxed text-zinc-600 dark:text-zinc-400 ${isZh ? 'text-justify' : ''}`}>
+                  <p className="font-light text-2xl text-zinc-950 dark:text-zinc-50">
+                    {t.logs.projectAlpha.desc}
+                  </p>
+
+                  <div className="grid md:grid-cols-2 gap-12">
+                    <div className="p-8 border border-zinc-200 dark:border-zinc-800 bg-white dark:bg-zinc-800/50 hover:border-zinc-950 dark:hover:border-zinc-50 transition-colors shadow-sm">
+                      <h4 className="font-bold mb-6 flex items-center gap-2 text-[10px] font-mono border-b border-zinc-100 dark:border-zinc-700 pb-2 tracking-widest">
+                        {t.logs.projectAlpha.details1Title}
+                      </h4>
+                      <ul className="space-y-6 text-base text-zinc-600 dark:text-zinc-400">
+                        {t.logs.projectAlpha.details1.map((item, i) => (
+                          <li key={i}>
+                            <span className="font-bold text-zinc-950 dark:text-zinc-50 block mb-2 text-sm uppercase">{item.label}</span>
+                            {item.text}
+                          </li>
+                        ))}
+                      </ul>
+                    </div>
+                    <div className="p-8 border border-zinc-200 dark:border-zinc-800 bg-white dark:bg-zinc-800/50 hover:border-zinc-950 dark:hover:border-zinc-50 transition-colors shadow-sm">
+                      <h4 className="font-bold mb-6 flex items-center gap-2 text-[10px] font-mono border-b border-zinc-100 dark:border-zinc-700 pb-2 tracking-widest">
+                        {t.logs.projectAlpha.details2Title}
+                      </h4>
+                      <ul className="space-y-6 text-base text-zinc-600 dark:text-zinc-400">
+                        {t.logs.projectAlpha.details2.map((item, i) => (
+                          <li key={i}>
+                            <span className="font-bold text-zinc-950 dark:text-zinc-50 block mb-2 text-sm uppercase">{item.label}</span>
+                            {item.text}
+                          </li>
+                        ))}
+                      </ul>
+                    </div>
                   </div>
-                  <div className="mb-8 flex gap-3 flex-wrap font-mono text-xs">
-                     {t.logs.exp2.tags.map((tag, i) => (
-                        <span key={i} className="border border-[#E5E5E5] px-3 py-1 uppercase tracking-wider text-gray-500">{tag}</span>
-                     ))}
+                </div>
+              </div>
+
+              {/* Experience 01 */}
+              <div className="group relative pl-8 border-l border-zinc-200 dark:border-zinc-800 hover:border-zinc-950 dark:hover:border-zinc-50 transition-colors">
+                <div className="flex flex-col md:flex-row md:items-baseline justify-between mb-8 gap-4">
+                  <h3 className={`text-4xl md:text-5xl font-bold uppercase ${isZh ? 'tracking-tight' : 'tracking-tighter'}`}>
+                    {t.logs.exp1.title}
+                  </h3>
+                  <span className="font-mono text-zinc-400 text-sm whitespace-nowrap">{t.logs.exp1.date}</span>
+                </div>
+                <div className="mb-8 flex gap-3 flex-wrap font-mono text-xs">
+                  {t.logs.exp1.tags.map((tag, i) => (
+                    <span key={i} className="border border-zinc-200 dark:border-zinc-800 px-3 py-1 uppercase tracking-wider text-zinc-500">{tag}</span>
+                  ))}
+                </div>
+                <p className={`mb-12 text-xl font-light opacity-90 ${isZh ? 'text-justify' : ''}`}>{t.logs.exp1.desc}</p>
+
+                <div className="glass-panel p-8 space-y-8">
+                  <div>
+                    <h4 className="font-bold mb-2 pixel-font text-xs uppercase tracking-widest">{t.logs.exp1.sub1}</h4>
+                    <p className="text-zinc-600 dark:text-zinc-400 leading-relaxed">{t.logs.exp1.text1}</p>
                   </div>
-                  <p className={`mb-12 text-xl font-light text-black opacity-90 ${isZh ? 'text-justify' : ''}`}>{t.logs.exp2.desc}</p>
-                  
-                  <div className="glass-panel p-8 space-y-8 bg-white/50">
+                  <div className="w-full h-[1px] bg-zinc-200 dark:bg-zinc-800"></div>
+                  <div>
+                    <h4 className="font-bold mb-2 pixel-font text-xs uppercase tracking-widest">{t.logs.exp1.sub2}</h4>
+                    <p className="text-zinc-600 dark:text-zinc-400 leading-relaxed">{t.logs.exp1.text2}</p>
+                  </div>
+                </div>
+              </div>
+
+              {/* Experience 02 */}
+              <div className="group relative pl-8 border-l border-zinc-200 dark:border-zinc-800 hover:border-zinc-950 dark:hover:border-zinc-50 transition-colors">
+                <div className="flex flex-col md:flex-row md:items-baseline justify-between mb-8 gap-4">
+                  <h3 className={`text-4xl md:text-5xl font-bold uppercase ${isZh ? 'tracking-tight' : 'tracking-tighter'}`}>
+                    {t.logs.exp2.title}
+                  </h3>
+                  <span className="font-mono text-zinc-400 text-sm whitespace-nowrap">{t.logs.exp2.date}</span>
+                </div>
+                <div className="mb-8 flex gap-3 flex-wrap font-mono text-xs">
+                  {t.logs.exp2.tags.map((tag, i) => (
+                    <span key={i} className="border border-zinc-200 dark:border-zinc-800 px-3 py-1 uppercase tracking-wider text-zinc-500">{tag}</span>
+                  ))}
+                </div>
+                <p className={`mb-12 text-xl font-light opacity-90 ${isZh ? 'text-justify' : ''}`}>{t.logs.exp2.desc}</p>
+
+                <div className="glass-panel p-8 space-y-8">
+                  <div>
+                    <h4 className="font-bold mb-2 pixel-font text-xs uppercase tracking-widest">{t.logs.exp2.sub1}</h4>
+                    <p className="text-zinc-600 dark:text-zinc-400 leading-relaxed">{t.logs.exp2.text1}</p>
+                  </div>
+                  <div className="w-full h-[1px] bg-zinc-200 dark:bg-zinc-800"></div>
+                  <div>
+                    <h4 className="font-bold mb-2 pixel-font text-xs uppercase tracking-widest">{t.logs.exp2.sub2}</h4>
+                    <p className="text-zinc-600 dark:text-zinc-400 leading-relaxed">{t.logs.exp2.text2}</p>
+                  </div>
+                  {t.logs.exp2.sub3 && (
+                    <>
+                      <div className="w-full h-[1px] bg-zinc-200 dark:bg-zinc-800"></div>
                       <div>
-                         <h4 className="font-bold mb-2 pixel-font text-xs text-black uppercase tracking-widest">{t.logs.exp2.sub1}</h4>
-                         <p className="text-gray-600 leading-relaxed">{t.logs.exp2.text1}</p>
+                        <h4 className="font-bold mb-2 pixel-font text-xs uppercase tracking-widest">{t.logs.exp2.sub3}</h4>
+                        <p className="text-zinc-600 dark:text-zinc-400 leading-relaxed">{t.logs.exp2.text3}</p>
                       </div>
-                      <div className="w-full h-[1px] bg-[#E5E5E5]"></div>
-                      <div>
-                         <h4 className="font-bold mb-2 pixel-font text-xs text-black uppercase tracking-widest">{t.logs.exp2.sub2}</h4>
-                         <p className="text-gray-600 leading-relaxed">{t.logs.exp2.text2}</p>
-                      </div>
-                      {t.logs.exp2.sub3 && (
-                        <>
-                        <div className="w-full h-[1px] bg-[#E5E5E5]"></div>
-                        <div>
-                           <h4 className="font-bold mb-2 pixel-font text-xs text-black uppercase tracking-widest">{t.logs.exp2.sub3}</h4>
-                           <p className="text-gray-600 leading-relaxed">{t.logs.exp2.text3}</p>
-                        </div>
-                        </>
-                      )}
-                  </div>
-               </div>
+                    </>
+                  )}
+                </div>
+              </div>
 
             </div>
           </div>
         </div>
       </section>
 
-      {/* Work Grid with Parallax */}
-      <section id="work" className="relative z-10 py-32 px-4 md:px-12 max-w-[1920px] mx-auto bg-[#FFFFFF]">
-        <motion.div style={{ y: yWork }}>
-            <div className="mb-24 flex items-end gap-6">
-              <motion.h2 
-                initial="hidden"
-                whileInView="visible"
-                viewport={{ once: true, margin: "-10%" }}
-                variants={titleAnim}
-                className="text-[10vw] leading-none font-bold tracking-tighter uppercase text-black"
-              >
-                {t.work.title}
-              </motion.h2>
-              <div className="w-4 h-4 bg-black mb-[2vw] rounded-full"></div>
-            </div>
+      {/* ============ BLOG (replaces WORK) ============ */}
+      <section id="blog" className="relative z-10 py-24 md:py-32 px-4 md:px-12 max-w-[1920px] mx-auto">
+        <div className="mb-24 flex items-end gap-6">
+          <motion.h2
+            initial="hidden"
+            whileInView="visible"
+            viewport={{ once: true, margin: '-10%' }}
+            variants={titleAnim}
+            className={`text-[10vw] leading-none font-bold tracking-tighter uppercase ${isZh ? 'font-black' : ''}`}
+          >
+            {t.blog.title}
+          </motion.h2>
+          <div className="w-4 h-4 bg-zinc-950 dark:bg-zinc-50 mb-[2vw] rounded-full"></div>
+        </div>
 
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-12">
-              {projects.map(project => (
-                <ProjectCard key={project.id} project={project} />
-              ))}
-            </div>
+        <motion.div
+          initial="hidden"
+          whileInView="visible"
+          viewport={{ once: true, margin: '-5%' }}
+          variants={staggerContainer}
+          className="grid grid-cols-1 md:grid-cols-2 gap-8 md:gap-12"
+        >
+          {posts.map((post, i) => (
+            <BlogCard key={post.slug} post={post} index={i} readMore={t.blog.readMore} />
+          ))}
         </motion.div>
       </section>
 
-      {/* Contact Section with Parallax */}
-      <section id="contact" className="relative z-10 py-32 px-6 flex flex-col items-center text-center bg-[#FAFAFA] text-black border-t border-[#E5E5E5]">
-        <motion.div style={{ y: yContact }} className="flex flex-col items-center w-full">
-            <motion.h2 
-              initial="hidden"
-              whileInView="visible"
-              viewport={{ once: true, margin: "-10%" }}
-              variants={titleAnim}
-              className="text-[12vw] leading-none font-bold tracking-tighter mb-4 text-black uppercase"
-            >
-              {t.contact.title}
-            </motion.h2>
-            <p className={`text-2xl md:text-3xl mb-16 max-w-2xl font-light opacity-60 text-black ${isZh ? 'font-medium' : 'font-sans'}`}>
-              {t.contact.subtitle}
-            </p>
-            
-            <a href="mailto:damue0@outlook.com" className="group relative inline-block mb-32">
-               <div className="relative border border-black bg-white text-black text-4xl md:text-6xl px-16 py-8 font-bold hover:bg-black hover:text-white transition-all duration-300 uppercase tracking-tight shadow-[0_4px_0_rgba(0,0,0,1)] hover:shadow-none hover:translate-y-[4px]">
-                 {t.contact.cta}
-               </div>
-            </a>
+      {/* ============ CONTACT (minimized footer strip) ============ */}
+      <section id="contact" className="relative z-10 border-t border-zinc-200 dark:border-zinc-800 bg-zinc-50 dark:bg-zinc-900">
+        <div className="max-w-[1920px] mx-auto px-6 md:px-12 py-12 flex flex-col md:flex-row items-center justify-between gap-8">
 
-            <div className="flex gap-8 mb-24">
-               <a href="https://github.com/Damue01" target="_blank" rel="noopener noreferrer" className="p-4 border border-[#E5E5E5] hover:bg-black hover:text-white hover:border-black transition-all rounded-full">
-                  <Github size={24} strokeWidth={1.5} />
-               </a>
-               <a href="https://space.bilibili.com/5866300" target="_blank" rel="noopener noreferrer" className="p-4 border border-[#E5E5E5] hover:bg-black hover:text-white hover:border-black transition-all rounded-full">
-                  <Tv size={24} strokeWidth={1.5} />
-               </a>
-               <a href="mailto:damue0@outlook.com" className="p-4 border border-[#E5E5E5] hover:bg-black hover:text-white hover:border-black transition-all rounded-full">
-                  <Mail size={24} strokeWidth={1.5} />
-               </a>
-            </div>
-            
-            <footer className="w-full border-t border-[#E5E5E5] py-12 flex flex-col md:flex-row justify-between px-12 opacity-40 text-xs font-mono tracking-widest text-gray-500">
-              <span>© 2025 DAMUE PORTFOLIO</span>
-              <span className="flex items-center gap-2">
-                <div className="w-2 h-2 bg-green-500 rounded-full animate-pulse"></div>
-                SYSTEM_ONLINE
-              </span>
-            </footer>
-        </motion.div>
+          {/* Social links */}
+          <div className="flex gap-4">
+            <a
+              href="https://github.com/Damue01"
+              target="_blank"
+              rel="noopener noreferrer"
+              className="p-3 border border-zinc-200 dark:border-zinc-800 hover:bg-zinc-950 hover:text-white dark:hover:bg-white dark:hover:text-zinc-950 transition-all rounded-full"
+            >
+              <GithubLogo size={20} weight="regular" />
+            </a>
+            <a
+              href="https://space.bilibili.com/5866300"
+              target="_blank"
+              rel="noopener noreferrer"
+              className="p-3 border border-zinc-200 dark:border-zinc-800 hover:bg-zinc-950 hover:text-white dark:hover:bg-white dark:hover:text-zinc-950 transition-all rounded-full"
+            >
+              <MonitorPlay size={20} weight="regular" />
+            </a>
+            <a
+              href="mailto:damue0@outlook.com"
+              className="p-3 border border-zinc-200 dark:border-zinc-800 hover:bg-zinc-950 hover:text-white dark:hover:bg-white dark:hover:text-zinc-950 transition-all rounded-full"
+            >
+              <Envelope size={20} weight="regular" />
+            </a>
+          </div>
+
+          {/* Copyright + Status */}
+          <div className="flex items-center gap-8 text-xs font-mono tracking-widest text-zinc-400">
+            <span>{t.contact.copyright}</span>
+            <span className="flex items-center gap-2">
+              <div className="w-2 h-2 bg-emerald-500 rounded-full animate-pulse"></div>
+              {t.contact.status}
+            </span>
+          </div>
+        </div>
       </section>
 
       <ChatWidget />

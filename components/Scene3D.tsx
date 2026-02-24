@@ -1,160 +1,193 @@
-import React, { useRef, useState, useMemo } from 'react';
-import { Canvas, useFrame, useThree } from '@react-three/fiber';
-import { Box, Float, Environment } from '@react-three/drei';
+import React, { useRef, useState, useMemo, useCallback } from 'react';
+import { Canvas, useFrame, useThree, ThreeEvent } from '@react-three/fiber';
+import { Float, Environment } from '@react-three/drei';
 import * as THREE from 'three';
 
-// Vibrant Luxury Palette
-const VIBRANT_COLORS = [
-  '#FF00FF', // Magenta
-  '#00FFFF', // Cyan
-  '#FF3300', // Neon Red/Orange
-  '#CCFF00', // Acid Green
-  '#7000FF', // Electric Purple
-  '#FFD700', // Gold
-  '#FF1493', // Deep Pink
-  '#00FF7F', // Spring Green
+// Refined accent palette
+const ACCENT_COLORS = [
+  '#E8336D', '#00B4D8', '#FF6B35', '#06D6A0',
+  '#118AB2', '#FFD166', '#EF476F', '#26547C',
 ];
 
-const VoxelObject: React.FC<{ position: [number, number, number], speed: number, hoverColor: string }> = ({ position, speed, hoverColor }) => {
+// Shared geometry (avoid per-instance allocation)
+const boxGeo = new THREE.BoxGeometry(0.95, 0.95, 0.95);
+const edgeGeo = new THREE.EdgesGeometry(boxGeo);
+
+// Per-instance reusable tmp objects (safe because useFrame is single-threaded)
+const _s = new THREE.Vector3();
+const _c = new THREE.Color();
+const _e = new THREE.Color();
+
+/* ------------------------------------------------------------------ */
+/*  VoxelObject – single interactive cube                              */
+/* ------------------------------------------------------------------ */
+const VoxelObject: React.FC<{
+  position: [number, number, number];
+  baseSpeed: number;
+  accent: string;
+}> = React.memo(({ position, baseSpeed, accent }) => {
   const meshRef = useRef<THREE.Mesh>(null);
-  const [hovered, setHover] = useState(false);
-  const [clicked, setClicked] = useState(false);
+  const edgeRef = useRef<THREE.LineSegments>(null);
+  const hoverRef = useRef(false);    // avoid re-render on hover
+  const clickTs = useRef(0);         // timestamp of last click
 
-  useFrame((state, delta) => {
-    if (meshRef.current) {
-      // Rotation - Faster on hover
-      const targetSpeed = clicked ? 30 : (hovered ? 8 : 1);
-      
-      meshRef.current.rotation.x += delta * (clicked ? 10 : (hovered ? 3 : speed));
-      meshRef.current.rotation.y += delta * (clicked ? 10 : (hovered ? 3 : speed * 0.5));
-      
-      // Scale: "Punch" effect
-      const targetScale = clicked ? 0.8 : (hovered ? 1.3 : 1);
-      meshRef.current.scale.lerp(new THREE.Vector3(targetScale, targetScale, targetScale), 0.15);
+  // ---- animation loop (no setState → zero re-renders) ----
+  useFrame((_state, delta) => {
+    const mesh = meshRef.current;
+    if (!mesh) return;
+    const mat = mesh.material as THREE.MeshStandardMaterial;
+    const edgeMat = edgeRef.current?.material as THREE.LineBasicMaterial | undefined;
+    const hovered = hoverRef.current;
+    const clicking = (performance.now() - clickTs.current) < 300;
 
-      // Material Animation
-      const material = meshRef.current.material as THREE.MeshStandardMaterial;
-      
-      if (clicked) {
-        material.color.setHex(0xFFFFFF); // Flash White on click
-        material.emissive.setHex(0xFFFFFF);
-        material.emissiveIntensity = 2;
-      } else if (hovered) {
-         // INTERACTIVE STATE: Brilliant Color Reveal
-         material.color.lerp(new THREE.Color(hoverColor), 0.2); 
-         material.emissive.lerp(new THREE.Color(hoverColor), 0.2);
-         material.emissiveIntensity = 0.5;
-         material.roughness = 0.1;
-         material.metalness = 0.4;
-      } else {
-         // DEFAULT STATE: White Ceramic
-         material.color.lerp(new THREE.Color('#F5F5F5'), 0.1); 
-         material.emissive.lerp(new THREE.Color('#000000'), 0.1);
-         material.emissiveIntensity = 0;
-         material.roughness = 0.2;
-         material.metalness = 0.1;
-      }
+    // --- rotation: instant speed response ---
+    const rot = clicking ? 12 : hovered ? 4.5 : baseSpeed;
+    mesh.rotation.x += delta * rot;
+    mesh.rotation.y += delta * rot * 0.6;
+
+    // --- scale: snappy spring-like lerp ---
+    const t = clicking ? 0.7 : hovered ? 1.3 : 1;
+    _s.set(t, t, t);
+    // Higher lerp factor = snappier feel (0.22 vs old 0.12)
+    mesh.scale.lerp(_s, 0.22);
+
+    // --- color: fast transition on hover, smooth return ---
+    if (clicking) {
+      mat.color.setHex(0xffffff);
+      mat.emissive.setHex(0xffffff);
+      mat.emissiveIntensity = THREE.MathUtils.lerp(mat.emissiveIntensity, 2.5, 0.4);
+    } else if (hovered) {
+      _c.set(accent);
+      _e.set(accent);
+      mat.color.lerp(_c, 0.25);          // was 0.15 → much snappier
+      mat.emissive.lerp(_e, 0.25);
+      mat.emissiveIntensity = THREE.MathUtils.lerp(mat.emissiveIntensity, 0.5, 0.18);
+      mat.roughness = THREE.MathUtils.lerp(mat.roughness, 0.05, 0.15);
+      mat.metalness = THREE.MathUtils.lerp(mat.metalness, 0.4, 0.15);
+    } else {
+      _c.set('#F5F5F5');
+      _e.set('#000000');
+      mat.color.lerp(_c, 0.1);
+      mat.emissive.lerp(_e, 0.1);
+      mat.emissiveIntensity = THREE.MathUtils.lerp(mat.emissiveIntensity, 0, 0.1);
+      mat.roughness = THREE.MathUtils.lerp(mat.roughness, 0.2, 0.1);
+      mat.metalness = THREE.MathUtils.lerp(mat.metalness, 0.1, 0.1);
+    }
+
+    // edge glow
+    if (edgeMat) {
+      edgeMat.color.set(hovered || clicking ? '#FFFFFF' : '#D4D4D8');
     }
   });
 
-  const handleClick = (e: any) => {
+  const onPointerOver = useCallback((e: ThreeEvent<PointerEvent>) => {
     e.stopPropagation();
-    setClicked(true);
-    setTimeout(() => setClicked(false), 150);
-  };
+    hoverRef.current = true;
+    document.body.style.cursor = 'pointer';
+  }, []);
+
+  const onPointerOut = useCallback(() => {
+    hoverRef.current = false;
+    document.body.style.cursor = '';
+  }, []);
+
+  const onClick = useCallback((e: ThreeEvent<MouseEvent>) => {
+    e.stopPropagation();
+    clickTs.current = performance.now();
+  }, []);
 
   return (
-    <Box
+    <mesh
       ref={meshRef}
-      args={[0.95, 0.95, 0.95]} 
+      geometry={boxGeo}
       position={position}
-      onPointerOver={(e) => { e.stopPropagation(); setHover(true); document.body.style.cursor = 'pointer'; }}
-      onPointerOut={(e) => { setHover(false); document.body.style.cursor = 'crosshair'; }}
-      onClick={handleClick}
+      onPointerOver={onPointerOver}
+      onPointerOut={onPointerOut}
+      onClick={onClick}
     >
-      {/* Base Material: Animates between White Ceramic and Vibrant Color */}
-      <meshStandardMaterial 
-        color="#F5F5F5"
-        roughness={0.2}
-        metalness={0.1}
-        flatShading={false}
-      />
-      <lineSegments>
-        <edgesGeometry args={[new THREE.BoxGeometry(0.95, 0.95, 0.95)]} />
-        {/* Wireframe Material: White on hover to act as a clean container */}
-        <lineBasicMaterial color={hovered ? "#FFFFFF" : "#DDDDDD"} linewidth={1} />
+      <meshStandardMaterial color="#F5F5F5" roughness={0.2} metalness={0.1} />
+      <lineSegments ref={edgeRef} geometry={edgeGeo}>
+        <lineBasicMaterial color="#D4D4D8" />
       </lineSegments>
-    </Box>
+    </mesh>
   );
-};
+});
 
-const ArtCluster = () => {
+VoxelObject.displayName = 'VoxelObject';
+
+/* ------------------------------------------------------------------ */
+/*  ArtCluster – the whole voxel group with mouse-follow rotation      */
+/* ------------------------------------------------------------------ */
+const ArtCluster: React.FC = () => {
   const groupRef = useRef<THREE.Group>(null);
   const { viewport, pointer } = useThree();
 
   useFrame((state) => {
-    if (groupRef.current) {
-      const x = (pointer.x * viewport.width) / 10;
-      const y = (pointer.y * viewport.height) / 10;
-      
-      groupRef.current.rotation.x = THREE.MathUtils.lerp(groupRef.current.rotation.x, y * 0.05, 0.05);
-      groupRef.current.rotation.y = THREE.MathUtils.lerp(groupRef.current.rotation.y, x * 0.05 + state.clock.getElapsedTime() * 0.05, 0.05);
-    }
+    if (!groupRef.current) return;
+    const g = groupRef.current;
+    // Faster mouse-follow lerp (0.08 vs 0.05) for more responsive feel
+    const mx = (pointer.x * viewport.width) / 8;
+    const my = (pointer.y * viewport.height) / 8;
+    g.rotation.x = THREE.MathUtils.lerp(g.rotation.x, my * 0.06, 0.08);
+    g.rotation.y = THREE.MathUtils.lerp(
+      g.rotation.y,
+      mx * 0.06 + state.clock.getElapsedTime() * 0.04,
+      0.08
+    );
   });
 
-  const positions: [number, number, number][] = [
+  const positions: [number, number, number][] = useMemo(() => [
     [0, 0, 0], [1, 0, 0], [-1, 0, 0], [0, 1, 0], [0, -1, 0], [0, 0, 1], [0, 0, -1],
     [1, 1, 0], [-1, -1, 0], [1, -1, 0], [-1, 1, 0],
     [0, 1, 1], [0, -1, -1], [2, 0, 0], [-2, 0, 0],
     [2, 1, 0], [-2, -1, 0], [0, 2, 0], [0, -2, 0],
-    [3, 2, 1], [-3, -2, -1], [2, -2, 2], [-2, 2, -2]
-  ];
+    [3, 2, 1], [-3, -2, -1], [2, -2, 2], [-2, 2, -2],
+  ], []);
 
-  // Memoize colors so they don't change on re-render
-  const voxelColors = useMemo(() => {
-    return positions.map(() => VIBRANT_COLORS[Math.floor(Math.random() * VIBRANT_COLORS.length)]);
-  }, []);
+  const voxelData = useMemo(() =>
+    positions.map(() => ({
+      accent: ACCENT_COLORS[Math.floor(Math.random() * ACCENT_COLORS.length)],
+      baseSpeed: 0.08 + Math.random() * 0.18,
+    })),
+  [positions]);
 
   return (
-    <group ref={groupRef} position={[3, 0, 0]}> 
-      {positions.map((pos, idx) => (
-        <VoxelObject 
-          key={idx} 
-          position={pos} 
-          speed={0.1 + Math.random() * 0.2}
-          hoverColor={voxelColors[idx]}
+    <group ref={groupRef} position={[3, 0, 0]}>
+      {positions.map((pos, i) => (
+        <VoxelObject
+          key={i}
+          position={pos}
+          baseSpeed={voxelData[i].baseSpeed}
+          accent={voxelData[i].accent}
         />
       ))}
     </group>
   );
 };
 
-const Scene3D: React.FC = () => {
-  return (
-    <div className="w-full h-full relative">
-      <Canvas camera={{ position: [0, 0, 14], fov: 30 }} dpr={[1, 2]} gl={{ antialias: true, toneMapping: THREE.ACESFilmicToneMapping }}>
-        <color attach="background" args={['transparent']} />
-        
-        {/* Studio Lighting High Key */}
-        <ambientLight intensity={0.8} />
-        
-        {/* Main Key Light - Cool White */}
-        <spotLight position={[10, 10, 10]} angle={0.3} penumbra={0.5} intensity={5} color="#FFFFFF" castShadow />
-        
-        {/* Fill Light - Warm White */}
-        <pointLight position={[-10, -5, 5]} intensity={2} color="#FFFFFF" />
-        
-        {/* Rim Light for shape definition */}
-        <pointLight position={[0, 5, -5]} intensity={3} color="#F0F0F0" />
-        
-        <Environment preset="studio" />
-
-        <Float speed={1.5} rotationIntensity={0.2} floatIntensity={0.5}>
-           <ArtCluster />
-        </Float>
-      </Canvas>
-    </div>
-  );
-};
+/* ------------------------------------------------------------------ */
+/*  Scene3D – Canvas wrapper                                           */
+/* ------------------------------------------------------------------ */
+const Scene3D: React.FC = () => (
+  <div className="w-full h-full relative" style={{ touchAction: 'none' }}>
+    <Canvas
+      camera={{ position: [0, 0, 14], fov: 30 }}
+      dpr={[1, 2]}
+      performance={{ min: 0.5 }}
+      raycaster={{ params: { Line: { threshold: 0.2 }, Points: { threshold: 0.2 } } }}
+      gl={{ antialias: true, toneMapping: THREE.ACESFilmicToneMapping, alpha: true }}
+      style={{ background: 'transparent' }}
+    >
+      <ambientLight intensity={0.8} />
+      <spotLight position={[10, 10, 10]} angle={0.3} penumbra={0.5} intensity={5} color="#FFFFFF" castShadow />
+      <pointLight position={[-10, -5, 5]} intensity={2} color="#FFFFFF" />
+      <pointLight position={[0, 5, -5]} intensity={3} color="#F0F0F0" />
+      <Environment preset="studio" />
+      <Float speed={1.5} rotationIntensity={0.2} floatIntensity={0.5}>
+        <ArtCluster />
+      </Float>
+    </Canvas>
+  </div>
+);
 
 export default Scene3D;
