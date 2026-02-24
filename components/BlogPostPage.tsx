@@ -115,7 +115,7 @@ const BlogPostPage: React.FC = () => {
           className="flex items-center gap-2 bg-white/80 dark:bg-zinc-900/80 backdrop-blur-md border border-zinc-200 dark:border-zinc-800 px-4 py-2 rounded-full hover:bg-zinc-950 hover:text-white dark:hover:bg-white dark:hover:text-zinc-950 transition-all text-sm font-medium shadow-sm"
         >
           <ArrowLeft size={16} weight="bold" />
-          <span>返回</span>
+          <span>返回博客</span>
         </button>
       </nav>
 
@@ -144,16 +144,6 @@ const BlogPostPage: React.FC = () => {
           </div>
         </header>
 
-        {/* Cover */}
-        <div className="aspect-video overflow-hidden rounded-2xl mb-16 border border-zinc-200 dark:border-zinc-800 bg-zinc-100 dark:bg-zinc-900">
-          <img
-            src={post.cover}
-            alt={post.title}
-            className="w-full h-full object-cover"
-            loading="lazy"
-          />
-        </div>
-
         {/* Article content */}
         <div
           className="article-content"
@@ -165,10 +155,10 @@ const BlogPostPage: React.FC = () => {
       <footer className="max-w-3xl mx-auto px-6 pb-12 border-t border-zinc-200 dark:border-zinc-800 pt-8 flex justify-between text-xs font-mono text-zinc-400 tracking-widest">
         <span>&copy; 2024-2025 DAMUE</span>
         <button
-          onClick={() => { navigate('/'); window.scrollTo({ top: 0 }); }}
+          onClick={() => navigate('/')}
           className="hover:text-zinc-950 dark:hover:text-zinc-50 transition-colors uppercase"
         >
-          Back to top
+          Back to blog
         </button>
       </footer>
     </motion.div>

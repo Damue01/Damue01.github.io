@@ -12,7 +12,7 @@ type Language = 'en' | 'zh';
 
 const content = {
   en: {
-    nav: { home: 'HOME', logs: 'LOGS', blog: 'BLOG', contact: 'CONTACT' },
+    nav: { home: 'HOME', logs: 'LOGS', blog: 'BLOG' },
     hero: {
       role: 'Game Engineer & Designer',
       desc: 'FOCUSED ON THE INTEGRATION OF AI AND GAMES, AS WELL AS THE DEVELOPMENT OF IMMERSIVE XR EXPERIENCES.',
@@ -84,7 +84,7 @@ const content = {
     }
   },
   zh: {
-    nav: { home: '首页', logs: '档案', blog: '博客', contact: '联系' },
+    nav: { home: '首页', logs: '档案', blog: '博客' },
     hero: {
       role: '游戏工程师',
       desc: '专注于AI与游戏的融合以及沉浸式XR体验开发。',
@@ -201,37 +201,57 @@ const SplitText: React.FC<{ text: string; className?: string }> = ({ text, class
 // --- BLOG CARD ---
 const BlogCard: React.FC<{ post: BlogPost; index: number; readMore: string }> = ({ post, index, readMore }) => {
   const navigate = useNavigate();
+  const isFirst = index === 0;
   return (
     <motion.article
       variants={staggerItem}
-      className={`group cursor-pointer ${index === 0 ? 'md:col-span-2' : ''}`}
-      onClick={() => navigate(`/blog/${post.slug}`)}
+      className={`group cursor-pointer ${isFirst ? 'md:col-span-2' : ''}`}
+      onClick={() => {
+        sessionStorage.setItem('blogScrollY', String(window.scrollY));
+        navigate(`/blog/${post.slug}`);
+      }}
     >
-      <div className={`overflow-hidden rounded-2xl mb-4 border border-zinc-200 dark:border-zinc-800 bg-zinc-100 dark:bg-zinc-900 ${index === 0 ? 'aspect-[2/1]' : 'aspect-video'}`}>
-        <img
-          src={post.cover}
-          alt={post.title}
-          className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-700"
-          loading="lazy"
-        />
+      <div className={`rounded-2xl border border-zinc-200 dark:border-zinc-800 hover:border-zinc-950 dark:hover:border-zinc-50 transition-colors duration-500 bg-white dark:bg-zinc-900/50 ${isFirst ? 'p-10 md:p-12' : 'p-8'}`}>
+        {isFirst ? (
+          /* First card: horizontal layout */
+          <div className="flex flex-col md:flex-row md:items-end gap-8">
+            <div className="flex-1">
+              <div className="flex gap-2 mb-4">
+                {post.tags.map(tag => (
+                  <span key={tag} className="text-[10px] font-mono tracking-widest uppercase px-2 py-0.5 border border-zinc-200 dark:border-zinc-800 text-zinc-500">{tag}</span>
+                ))}
+                <span className="text-[10px] font-mono text-zinc-400 ml-auto">{post.date}</span>
+              </div>
+              <div className="text-4xl md:text-5xl font-bold tracking-tighter leading-[0.95] mb-6 text-zinc-950 dark:text-zinc-50">
+                <SplitText text={post.title} className="flex-wrap" />
+              </div>
+            </div>
+            <div className="md:max-w-xs flex flex-col gap-4">
+              <p className="text-sm text-zinc-500 dark:text-zinc-400 leading-relaxed line-clamp-3">{post.description}</p>
+              <span className="inline-flex items-center gap-1 text-xs font-mono tracking-widest uppercase text-zinc-400 group-hover:text-zinc-950 dark:group-hover:text-zinc-50 transition-colors">
+                {readMore} <ArrowRight size={12} weight="bold" className="group-hover:translate-x-1 transition-transform" />
+              </span>
+            </div>
+          </div>
+        ) : (
+          /* Normal cards: vertical layout */
+          <>
+            <div className="flex gap-2 mb-4">
+              {post.tags.map(tag => (
+                <span key={tag} className="text-[10px] font-mono tracking-widest uppercase px-2 py-0.5 border border-zinc-200 dark:border-zinc-800 text-zinc-500">{tag}</span>
+              ))}
+              <span className="text-[10px] font-mono text-zinc-400 ml-auto">{post.date}</span>
+            </div>
+            <div className="text-xl md:text-2xl font-bold tracking-tight mb-4 text-zinc-950 dark:text-zinc-50">
+              <SplitText text={post.title} className="flex-wrap" />
+            </div>
+            <p className="text-sm text-zinc-500 dark:text-zinc-400 leading-relaxed mb-4 line-clamp-2">{post.description}</p>
+            <span className="inline-flex items-center gap-1 text-xs font-mono tracking-widest uppercase text-zinc-400 group-hover:text-zinc-950 dark:group-hover:text-zinc-50 transition-colors">
+              {readMore} <ArrowRight size={12} weight="bold" className="group-hover:translate-x-1 transition-transform" />
+            </span>
+          </>
+        )}
       </div>
-      <div className="flex gap-2 mb-3">
-        {post.tags.map(tag => (
-          <span key={tag} className="text-[10px] font-mono tracking-widest uppercase px-2 py-0.5 border border-zinc-200 dark:border-zinc-800 text-zinc-500">
-            {tag}
-          </span>
-        ))}
-        <span className="text-[10px] font-mono text-zinc-400 ml-auto">{post.date}</span>
-      </div>
-      <h3 className="text-xl md:text-2xl font-bold tracking-tight mb-2 text-zinc-950 dark:text-zinc-50 group-hover:text-zinc-600 dark:group-hover:text-zinc-300 transition-colors">
-        {post.title}
-      </h3>
-      <p className="text-sm text-zinc-500 dark:text-zinc-400 leading-relaxed mb-3 line-clamp-2">
-        {post.description}
-      </p>
-      <span className="inline-flex items-center gap-1 text-xs font-mono tracking-widest uppercase text-zinc-400 group-hover:text-zinc-950 dark:group-hover:text-zinc-50 transition-colors">
-        {readMore} <ArrowRight size={12} weight="bold" className="group-hover:translate-x-1 transition-transform" />
-      </span>
     </motion.article>
   );
 };
@@ -261,6 +281,18 @@ const App: React.FC = () => {
     document.documentElement.classList.toggle('dark', darkMode);
     localStorage.setItem('theme', darkMode ? 'dark' : 'light');
   }, [darkMode]);
+
+  // Restore scroll position when returning from blog post
+  useEffect(() => {
+    const savedY = sessionStorage.getItem('blogScrollY');
+    if (savedY) {
+      // Use requestAnimationFrame to ensure DOM is rendered
+      requestAnimationFrame(() => {
+        window.scrollTo(0, parseInt(savedY, 10));
+      });
+      sessionStorage.removeItem('blogScrollY');
+    }
+  }, []);
 
   // Scroll to section (replaces hash anchors for compatibility with HashRouter)
   const scrollTo = useCallback((id: string) => {
@@ -572,17 +604,17 @@ const App: React.FC = () => {
 
       {/* ============ BLOG (replaces WORK) ============ */}
       <section id="blog" className="relative z-10 py-24 md:py-32 px-4 md:px-12 max-w-[1920px] mx-auto">
-        <div className="mb-24 flex items-end gap-6">
+        <div className="mb-24 flex items-baseline justify-between border-b border-zinc-200 dark:border-zinc-800 pb-4">
           <motion.h2
             initial="hidden"
             whileInView="visible"
             viewport={{ once: true, margin: '-10%' }}
             variants={titleAnim}
-            className={`text-[10vw] leading-none font-bold tracking-tighter uppercase ${isZh ? 'font-black' : ''}`}
+            className={`text-[6vw] leading-none font-bold tracking-tighter uppercase ${isZh ? 'font-black' : ''}`}
           >
             {t.blog.title}
           </motion.h2>
-          <div className="w-4 h-4 bg-zinc-950 dark:bg-zinc-50 mb-[2vw] rounded-full"></div>
+          <span className="font-mono text-xs text-zinc-400">BLOG_SYS</span>
         </div>
 
         <motion.div
