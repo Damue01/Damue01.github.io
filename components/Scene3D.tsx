@@ -174,7 +174,7 @@ const Scene3D: React.FC = () => (
       camera={{ position: [0, 0, 14], fov: 30 }}
       dpr={[1, 2]}
       performance={{ min: 0.5 }}
-      raycaster={{ params: { Line: { threshold: 0.2 }, Points: { threshold: 0.2 } } }}
+      raycaster={{ params: { Line: { threshold: 0.2 }, Points: { threshold: 0.2 } } } as any}
       gl={{ antialias: true, toneMapping: THREE.ACESFilmicToneMapping, alpha: true }}
       style={{ background: 'transparent' }}
     >
