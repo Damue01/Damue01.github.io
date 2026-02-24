@@ -178,25 +178,39 @@ const staggerItem: Variants = {
 };
 
 // --- SPLIT TEXT ---
-const SplitText: React.FC<{ text: string; className?: string }> = ({ text, className }) => (
-  <div className={`inline-flex ${className ?? ''}`}>
-    {text.split('').map((char, i) => (
-      <motion.span
-        key={i}
-        className={`inline-block origin-bottom ${char === ' ' ? 'w-[2vw]' : ''}`}
-        whileHover={{
-          y: -15,
-          scale: 1.1,
-          rotate: Math.random() * 5 - 2.5,
-          color: '#555555',
-          transition: { type: 'spring', stiffness: 400, damping: 10 }
-        }}
-      >
-        {char}
-      </motion.span>
-    ))}
-  </div>
-);
+const SplitText: React.FC<{ text: string; className?: string }> = ({ text, className }) => {
+  const [isDark, setIsDark] = useState(() =>
+    typeof document !== 'undefined' && document.documentElement.classList.contains('dark')
+  );
+
+  useEffect(() => {
+    const observer = new MutationObserver(() => {
+      setIsDark(document.documentElement.classList.contains('dark'));
+    });
+    observer.observe(document.documentElement, { attributes: true, attributeFilter: ['class'] });
+    return () => observer.disconnect();
+  }, []);
+
+  return (
+    <div className={`inline-flex ${className ?? ''}`}>
+      {text.split('').map((char, i) => (
+        <motion.span
+          key={i}
+          className={`inline-block origin-bottom ${char === ' ' ? 'w-[2vw]' : ''}`}
+          whileHover={{
+            y: -15,
+            scale: 1.1,
+            rotate: Math.random() * 5 - 2.5,
+            color: isDark ? '#a1a1aa' : '#555555',
+            transition: { type: 'spring', stiffness: 400, damping: 10 }
+          }}
+        >
+          {char}
+        </motion.span>
+      ))}
+    </div>
+  );
+};
 
 // --- BLOG CARD ---
 const BlogCard: React.FC<{ post: BlogPost; index: number; readMore: string }> = ({ post, index, readMore }) => {
@@ -389,12 +403,12 @@ const App: React.FC = () => {
             </div>
 
             {/* Title text - pointer-events-auto for SplitText hover effects */}
-            <div className="pointer-events-auto text-[17vw] leading-[0.8] font-bold tracking-tighter mix-blend-multiply dark:mix-blend-normal cursor-default">
+            <div className="pointer-events-auto text-[17vw] leading-[0.8] font-bold tracking-tighter text-zinc-950 dark:text-zinc-50 cursor-default">
               <SplitText text="DAMUE" />
             </div>
 
             <div className="flex items-baseline gap-4 ml-[1vw]">
-              <div className="pointer-events-auto text-[17vw] leading-[0.8] font-bold tracking-tighter pixel-font opacity-80 cursor-default">
+              <div className="pointer-events-auto text-[17vw] leading-[0.8] font-bold tracking-tighter pixel-font text-zinc-950/80 dark:text-zinc-50/80 cursor-default">
                 <SplitText text="PORTFOLIO" />
               </div>
               <span className="hidden md:inline-block text-sm font-mono opacity-50 rotate-90 origin-left translate-y-8">
