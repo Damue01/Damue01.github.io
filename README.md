@@ -1,20 +1,52 @@
-<div align="center">
-<img width="1200" height="475" alt="GHBanner" src="https://github.com/user-attachments/assets/0aa67016-6eaf-458a-adb2-6e31a0763ed6" />
-</div>
+# Damue's Portfolio
 
-# Run and deploy your AI Studio app
+个人博客 & 作品集站点 — [damue.fun](https://damue.fun)
 
-This contains everything you need to run your app locally.
+## Tech Stack
 
-View your app in AI Studio: https://ai.studio/apps/temp/1
+- React 19 + TypeScript
+- Vite 6
+- Tailwind CSS v4 (`@tailwindcss/vite`)
+- Three.js (React Three Fiber)
+- Framer Motion
+- Markdown via `remark` + `remark-gfm` + `rehype-highlight`
 
-## Run Locally
+## Development
 
-**Prerequisites:**  Node.js
+```bash
+npm install
+npm run dev
+```
 
+打开 http://localhost:3000。
 
-1. Install dependencies:
-   `npm install`
-2. Set the `GEMINI_API_KEY` in [.env.local](.env.local) to your Gemini API key
-3. Run the app:
-   `npm run dev`
+## Blog Posts
+
+文章源文件位于 `content/posts/*.md`，带有 YAML frontmatter：
+
+```md
+---
+title: "标题"
+date: "YYYY-MM-DD"
+tags: ["AI", "UE"]
+description: "一句话简介"
+cover: "封面图 URL"
+---
+
+正文 Markdown ...
+```
+
+文件会在构建期由 `import.meta.glob` 自动收集进 bundle，不需要手动登记。
+
+## Deploy
+
+构建并部署到 GitHub Pages（`gh-pages` 分支）：
+
+```bash
+npm run deploy
+```
+
+## Structure
+
+- `main` — 源码分支
+- `gh-pages` — 部署分支（自动生成，勿手动修改）

@@ -1,6 +1,6 @@
 import React, { useRef, useState, useMemo, useCallback } from 'react';
 import { Canvas, useFrame, useThree, ThreeEvent } from '@react-three/fiber';
-import { Float, Environment } from '@react-three/drei';
+import { Float } from '@react-three/drei';
 import * as THREE from 'three';
 
 // Refined accent palette
@@ -182,7 +182,6 @@ const Scene3D: React.FC = () => (
       <spotLight position={[10, 10, 10]} angle={0.3} penumbra={0.5} intensity={5} color="#FFFFFF" castShadow />
       <pointLight position={[-10, -5, 5]} intensity={2} color="#FFFFFF" />
       <pointLight position={[0, 5, -5]} intensity={3} color="#F0F0F0" />
-      <Environment preset="studio" />
       <Float speed={1.5} rotationIntensity={0.2} floatIntensity={0.5}>
         <ArtCluster />
       </Float>

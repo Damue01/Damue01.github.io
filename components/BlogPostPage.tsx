@@ -1,88 +1,42 @@
-import React from 'react';
+import React, { useEffect, useState } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { motion } from 'framer-motion';
 import { ArrowLeft, CalendarBlank } from '@phosphor-icons/react';
+import { unified } from 'unified';
+import remarkParse from 'remark-parse';
+import remarkGfm from 'remark-gfm';
+import remarkRehype from 'remark-rehype';
+import rehypeHighlight from 'rehype-highlight';
+import rehypeStringify from 'rehype-stringify';
+import 'highlight.js/styles/github.css';
 import { getPostBySlug } from '../lib/posts';
 
-/** Robust line-by-line Markdown → HTML renderer */
-function renderMarkdown(md: string): string {
-  // 1) Code blocks (fenced)
-  const codeBlocks: string[] = [];
-  let src = md.replace(/```(\w*)\n([\s\S]*?)```/g, (_m, _lang, code) => {
-    codeBlocks.push(`<pre><code>${code.replace(/</g, '&lt;').replace(/>/g, '&gt;')}</code></pre>`);
-    return `\x00CB${codeBlocks.length - 1}\x00`;
-  });
+const processor = unified()
+  .use(remarkParse)
+  .use(remarkGfm)
+  .use(remarkRehype, { allowDangerousHtml: false })
+  .use(rehypeHighlight as never, { ignoreMissing: true } as never)
+  .use(rehypeStringify);
 
-  const lines = src.split('\n');
-  const html: string[] = [];
-  let inList: 'ul' | 'ol' | null = null;
-
-  const inline = (s: string) =>
-    s
-      .replace(/\*\*(.*?)\*\*/g, '<strong>$1</strong>')
-      .replace(/\*(.*?)\*/g, '<em>$1</em>')
-      .replace(/`([^`]+)`/g, '<code>$1</code>');
-
-  const flushList = () => {
-    if (inList) { html.push(`</${inList}>`); inList = null; }
-  };
-
-  for (let i = 0; i < lines.length; i++) {
-    const raw = lines[i];
-    const line = raw.trimEnd();
-
-    // Code block placeholder
-    const cbMatch = line.match(/^\x00CB(\d+)\x00$/);
-    if (cbMatch) { flushList(); html.push(codeBlocks[+cbMatch[1]]); continue; }
-
-    // Empty line
-    if (!line.trim()) { flushList(); continue; }
-
-    // Headings
-    const h4 = line.match(/^####\s+(.*)/);
-    if (h4) { flushList(); html.push(`<h4>${inline(h4[1])}</h4>`); continue; }
-    const h3 = line.match(/^###\s+(.*)/);
-    if (h3) { flushList(); html.push(`<h3>${inline(h3[1])}</h3>`); continue; }
-    const h2 = line.match(/^##\s+(.*)/);
-    if (h2) { flushList(); html.push(`<h2>${inline(h2[1])}</h2>`); continue; }
-    const h1 = line.match(/^#\s+(.*)/);
-    if (h1) { flushList(); html.push(`<h1>${inline(h1[1])}</h1>`); continue; }
-
-    // Unordered list
-    const ul = line.match(/^[\-\*]\s+(.*)/);
-    if (ul) {
-      if (inList !== 'ul') { flushList(); html.push('<ul>'); inList = 'ul'; }
-      html.push(`<li>${inline(ul[1])}</li>`);
-      continue;
-    }
-
-    // Ordered list
-    const ol = line.match(/^\d+\.\s+(.*)/);
-    if (ol) {
-      if (inList !== 'ol') { flushList(); html.push('<ol>'); inList = 'ol'; }
-      html.push(`<li>${inline(ol[1])}</li>`);
-      continue;
-    }
-
-    // Paragraph: collect consecutive non-special lines
-    flushList();
-    const pLines = [line];
-    while (i + 1 < lines.length) {
-      const next = lines[i + 1].trimEnd();
-      if (!next.trim() || /^#{1,4}\s|^[\-\*]\s|^\d+\.\s|^\x00CB/.test(next)) break;
-      pLines.push(next);
-      i++;
-    }
-    html.push(`<p>${inline(pLines.join('<br/>'))}</p>`);
-  }
-  flushList();
-  return html.join('\n');
+async function renderMarkdown(md: string): Promise<string> {
+  const file = await processor.process(md);
+  return String(file);
 }
 
 const BlogPostPage: React.FC = () => {
   const { slug } = useParams<{ slug: string }>();
   const navigate = useNavigate();
   const post = slug ? getPostBySlug(slug) : undefined;
+  const [html, setHtml] = useState<string>('');
+
+  useEffect(() => {
+    if (!post) return;
+    let cancelled = false;
+    renderMarkdown(post.content).then(out => {
+      if (!cancelled) setHtml(out);
+    });
+    return () => { cancelled = true; };
+  }, [post]);
 
   if (!post) {
     return (
@@ -147,13 +101,13 @@ const BlogPostPage: React.FC = () => {
         {/* Article content */}
         <div
           className="article-content"
-          dangerouslySetInnerHTML={{ __html: renderMarkdown(post.content) }}
+          dangerouslySetInnerHTML={{ __html: html }}
         />
       </article>
 
       {/* Minimal footer */}
       <footer className="max-w-3xl mx-auto px-6 pb-12 border-t border-zinc-200 dark:border-zinc-800 pt-8 flex justify-between text-xs font-mono text-zinc-400 tracking-widest">
-        <span>&copy; 2024-2025 DAMUE</span>
+        <span>&copy; 2024-{new Date().getFullYear()} DAMUE</span>
         <button
           onClick={() => navigate('/')}
           className="hover:text-zinc-950 dark:hover:text-zinc-50 transition-colors uppercase"

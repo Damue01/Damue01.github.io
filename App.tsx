@@ -4,7 +4,6 @@ import { List, Envelope, X, ArrowDown, Cpu, Globe, GithubLogo, MonitorPlay, Sun,
 import { useNavigate } from 'react-router-dom';
 import Scene3D from './components/Scene3D';
 import PixelBackground from './components/PixelBackground';
-import ChatWidget from './components/ChatWidget';
 import { getAllPosts, type BlogPost } from './lib/posts';
 
 // --- LOCALIZATION ---
@@ -79,7 +78,7 @@ const content = {
       readMore: 'READ'
     },
     contact: {
-      copyright: '\u00A9 2024-2025 DAMUE',
+      copyright: `\u00A9 2024-${new Date().getFullYear()} DAMUE`,
       status: 'SYSTEM_ONLINE'
     }
   },
@@ -151,7 +150,7 @@ const content = {
       readMore: '阅读'
     },
     contact: {
-      copyright: '\u00A9 2024-2025 DAMUE',
+      copyright: `\u00A9 2024-${new Date().getFullYear()} DAMUE`,
       status: '系统在线'
     }
   }
@@ -412,7 +411,7 @@ const App: React.FC = () => {
                 <SplitText text="PORTFOLIO" />
               </div>
               <span className="hidden md:inline-block text-sm font-mono opacity-50 rotate-90 origin-left translate-y-8">
-                V.2025
+                V.2026
               </span>
             </div>
 
@@ -684,8 +683,6 @@ const App: React.FC = () => {
           </div>
         </div>
       </section>
-
-      <ChatWidget />
     </div>
   );
 };

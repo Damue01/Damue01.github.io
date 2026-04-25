@@ -12,17 +12,32 @@ const PixelBackground: React.FC = () => {
 
     let width = window.innerWidth;
     let height = window.innerHeight;
-    let animationFrameId: number;
+    let animationFrameId = 0;
     let mouseX = -1000;
     let mouseY = -1000;
+    let isDark = document.documentElement.classList.contains('dark');
 
-    // Configuration for Light Luxury Mode
-    const gridSize = 45; // Distance between dots
+    // Configuration
+    const gridSize = 45;
     const baseRadius = 1.0;
-    const hoverRadius = 200; // Radius of mouse influence
-    const colorNormal = 'rgba(0, 0, 0, 0.06)'; // Very faint grey dots
-    const colorActive = 'rgba(0, 0, 0, 0.9)'; // Sharp black on hover
-    const colorSecondary = 'rgba(100, 100, 100, 0.5)'; // Mid-grey transition
+    const hoverRadius = 200;
+
+    const palette = () => {
+      if (isDark) {
+        return {
+          normal: 'rgba(255, 255, 255, 0.08)',
+          mid: 'rgba(200, 200, 210, 0.45)',
+          near: 'rgba(255, 255, 255, 0.35)',
+          active: 'rgba(255, 255, 255, 0.95)',
+        };
+      }
+      return {
+        normal: 'rgba(0, 0, 0, 0.06)',
+        mid: 'rgba(100, 100, 100, 0.5)',
+        near: 'rgba(0, 0, 0, 0.2)',
+        active: 'rgba(0, 0, 0, 0.9)',
+      };
+    };
 
     const handleMouseMove = (e: MouseEvent) => {
       mouseX = e.clientX;
@@ -30,45 +45,43 @@ const PixelBackground: React.FC = () => {
     };
 
     const init = () => {
+      const dpr = Math.min(window.devicePixelRatio || 1, 2);
       width = window.innerWidth;
       height = window.innerHeight;
-      canvas.width = width;
-      canvas.height = height;
+      canvas.width = width * dpr;
+      canvas.height = height * dpr;
+      canvas.style.width = `${width}px`;
+      canvas.style.height = `${height}px`;
+      ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
     };
 
     const animate = () => {
+      const c = palette();
       ctx.clearRect(0, 0, width, height);
-      
-      // Draw Dot Matrix
+
       for (let x = 0; x <= width; x += gridSize) {
         for (let y = 0; y <= height; y += gridSize) {
-          // Calculate distance to mouse
           const dx = x - mouseX;
           const dy = y - mouseY;
           const distance = Math.sqrt(dx * dx + dy * dy);
-          
+
           let radius = baseRadius;
-          let color = colorNormal;
+          let color = c.normal;
           let offsetX = 0;
           let offsetY = 0;
 
-          // Interactive effect
           if (distance < hoverRadius) {
             const force = (hoverRadius - distance) / hoverRadius;
-            
-            // Elegant fluid wave effect
             const angle = Math.atan2(dy, dx);
             const moveDistance = force * 10;
             offsetX = Math.cos(angle) * moveDistance;
             offsetY = Math.sin(angle) * moveDistance;
 
-            // Subtle size increase
-            radius = baseRadius + (force * 1.5);
-            
-            // Color gradient based on distance
-            if (force > 0.6) color = colorActive;
-            else if (force > 0.3) color = colorSecondary;
-            else color = 'rgba(0, 0, 0, 0.2)';
+            radius = baseRadius + force * 1.5;
+
+            if (force > 0.6) color = c.active;
+            else if (force > 0.3) color = c.mid;
+            else color = c.near;
           }
 
           ctx.beginPath();
@@ -81,6 +94,15 @@ const PixelBackground: React.FC = () => {
       animationFrameId = requestAnimationFrame(animate);
     };
 
+    // Watch theme changes
+    const themeObserver = new MutationObserver(() => {
+      isDark = document.documentElement.classList.contains('dark');
+    });
+    themeObserver.observe(document.documentElement, {
+      attributes: true,
+      attributeFilter: ['class'],
+    });
+
     window.addEventListener('resize', init);
     window.addEventListener('mousemove', handleMouseMove);
     init();
@@ -89,14 +111,15 @@ const PixelBackground: React.FC = () => {
     return () => {
       window.removeEventListener('resize', init);
       window.removeEventListener('mousemove', handleMouseMove);
+      themeObserver.disconnect();
       cancelAnimationFrame(animationFrameId);
     };
   }, []);
 
   return (
-    <canvas 
-      ref={canvasRef} 
-      className="fixed top-0 left-0 w-full h-full -z-10 pointer-events-none opacity-100"
+    <canvas
+      ref={canvasRef}
+      className="fixed top-0 left-0 w-full h-full -z-10 pointer-events-none"
     />
   );
 };
